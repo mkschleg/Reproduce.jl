@@ -50,7 +50,7 @@ function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
 
     parsed_args[hash_key] = hashed
 
-    git_info = use_git_info ? Git.head():"0"
+    git_info = use_git_info ? Git.head() : "0"
 
     parsed_args[git_info_key] = git_info
 
