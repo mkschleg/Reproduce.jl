@@ -41,8 +41,7 @@ function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
     git_info_key = KEY_TYPE(GIT_INFO_KEY)
 
     hash_args = filter((k,v)->(!(k in unused_keys)), parsed_args)
-
-    # println(hash_args)
+    used_keys=keys(hash_args)
 
     hashed = HASHER(hash_args)
 
@@ -64,9 +63,9 @@ function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
     else
         println("Settings already exists! Overwriting data.")
     end
-    
+
     save_settings_file = joinpath(save_settings_path, "settings.jld")
-    JLD2.@save save_settings_file parsed_args 
+    JLD2.@save save_settings_file parsed_args used_keys
 
     return parsed_args
 

@@ -61,6 +61,12 @@ git-tree-sha1 = "0419db5d174ec0fc26d67f05c7eaa010d4485e8a"
 uuid = "d7ba0133-e1db-5d97-8f8c-041e4b3a1eb2"
 version = "0.3.0"
 
+[[Glob]]
+deps = ["Compat", "Test"]
+git-tree-sha1 = "c72f1fcb7d17426de1e8af2e948dfb3de1116eed"
+uuid = "c27321d9-0574-5035-807b-f59d2c89b15c"
+version = "1.2.0"
+
 [[Homebrew]]
 deps = ["BinDeps", "InteractiveUtils", "JSON", "Libdl", "Test", "Unicode"]
 git-tree-sha1 = "5582ec74f735cf8d12e562a2e65c47f34063bd51"

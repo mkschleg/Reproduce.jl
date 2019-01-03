@@ -6,5 +6,6 @@ version = "0.1.0"
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 Git = "d7ba0133-e1db-5d97-8f8c-041e4b3a1eb2"
+Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
