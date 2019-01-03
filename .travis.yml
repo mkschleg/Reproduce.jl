@@ -3,5 +3,3 @@ julia:
   - nightly
   - 1.0
 codecov: true
-after_success:
-- julia -e 'cd(Pkg.dir("Reproduce")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
