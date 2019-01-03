@@ -1,9 +1,9 @@
 # test/runtests.jl
-using Reproduce, Test, JLD2
+using Reproduce, Test, JLD2, Git
 
 TEST_DIR = "TEST_DIR"
 
-function arg_parse(args)
+function arg_parse(args; use_git_info=false)
 
     s = ArgParseSettings()
     @add_arg_table s begin
@@ -19,7 +19,7 @@ function arg_parse(args)
         arg_type = String
         required = true
     end
-    parsed = parse_args(args, s; save_settings_dir=TEST_DIR)
+    parsed = parse_args(args, s; save_settings_dir=TEST_DIR, use_git_info=use_git_info)
     return parsed
 end
 
@@ -59,6 +59,31 @@ function track_test()
     return all(tests)
 end
 
+function track_with_git_test()
+
+    git_head = Git.head()
+    used_keys = ["a", "b"]
+    parsed_dicts = Dict{UInt64, Dict}()
+    for i in 1:10
+        args=["--a", "$(i)", "--b", "$(i).jld"]
+        parsed = arg_parse(args; use_git_info=true)
+        parsed_dicts[parsed["_HASH"]] = parsed
+    end
+    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld")
+    tests = fill(false, 10)
+    for i in 1:10
+        @load dirs[i] parsed_args used_keys
+        tests[i] = (==(filter(k->(k[1] in used_keys), parsed_args),
+                       filter(k->(k[1] in used_keys), parsed_dicts[parsed_args["_HASH"]]))
+                    &
+                    (parsed_args["_GIT_INFO"] == parsed_dicts[parsed_args["_HASH"]]["_GIT_INFO"] == git_head))
+    end
+
+    reset_tests()
+    return all(tests)
+end
+
+
 
 
 function tests()
@@ -67,6 +92,7 @@ function tests()
         @testset "Parse Tests" begin
             @test parse_test() == true
             @test track_test() == true
+            @test track_with_git_test() == true
         end
         @testset "Search Tests" begin
         end
