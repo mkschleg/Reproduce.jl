@@ -23,7 +23,10 @@ end
 make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(hashed,base=16))"
 # make_save_name(hashed) = make_save_name(hashed, 0)
 
-# function parse_args
+"""
+    parse_args
+
+"""
 function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
                     save_settings_dir="RP_settings",
                     as_symbols::Bool = false, filter_keys::Array{String,1} = Array{String,1}(),
