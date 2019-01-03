@@ -1,6 +1,6 @@
 # Reproduce.jl
 [![Build Status](https://travis-ci.com/mkschleg/Reproduce.jl.svg?branch=master)](https://travis-ci.com/mkschleg/Reproduce.jl)
- [![codecov.io](https://codecov.io/github/codecov/codecov-python/coverage.svg?branch=master)](https://codecov.io/github/codecov/codecov-python)
+ [![codecov.io](https://codecov.io/github/codecov/codecov-python/coverage.svg?branch=master)](https://codecov.io/github/mkschleg/Reproduce.jl)
 
 
 What were my hyper-parameter settings again?
