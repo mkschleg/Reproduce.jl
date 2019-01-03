@@ -40,7 +40,7 @@ function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
     save_name_key = KEY_TYPE(SAVE_NAME_KEY)
     git_info_key = KEY_TYPE(GIT_INFO_KEY)
 
-    hash_args = filter((k,v)->(!(k in unused_keys)), parsed_args)
+    hash_args = filter(k->(!(k[1] in unused_keys)), parsed_args)
     used_keys=keys(hash_args)
 
     hashed = HASHER(hash_args)
