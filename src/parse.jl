@@ -15,16 +15,14 @@ GIT_INFO_KEY="_GIT_INFO"
 
 # println("Hello Parse!")
 
-function parse_args(settings::ArgParseSettings; kw...)
-    # println(ARGS)
-    parse_args(ARGS, settings; kw...)
-end
 
 make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(hashed,base=16))"
 # make_save_name(hashed) = make_save_name(hashed, 0)
 
 """
-    parse_args
+    parse_args(arg_list, settings, save_settings_dir[; as_symbols, filter_keys, use_git_info, custom_folder_name])
+
+
 
 """
 function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
@@ -70,4 +68,14 @@ function parse_args(arg_list::Array{String}, settings::ArgParseSettings;
 
     return parsed_args
 
+end
+
+"""
+   parse_args(settings; kw...)
+
+Parses args from the command line. For a full list of key word arguments see ArgParse.
+
+"""
+function parse_args(settings::ArgParseSettings; kw...)
+    parse_args(ARGS, settings; kw...)
 end

@@ -106,9 +106,6 @@ function track_with_git_test()
     return all(tests)
 end
 
-
-
-
 function tests()
 
     @testset "Tests" begin
