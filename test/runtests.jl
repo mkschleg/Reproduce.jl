@@ -1,5 +1,5 @@
 # test/runtests.jl
-using Reproduce, Test, JLD2, Git
+using Reproduce, Test, FileIO, Git
 
 TEST_DIR = "TEST_DIR"
 
@@ -19,8 +19,7 @@ function arg_parse(args; use_git_info=false, as_symbols=false)
         arg_type = String
         required = true
     end
-    parsed = parse_args(args, s;
-                        save_settings_dir=TEST_DIR,
+    parsed = parse_args(args, s, TEST_DIR;
                         use_git_info=use_git_info,
                         as_symbols=as_symbols)
     return parsed
@@ -51,10 +50,12 @@ function track_test()
         parsed = arg_parse(args)
         parsed_dicts[parsed["_HASH"]] = filter(k->(k[1] in used_keys), parsed)
     end
-    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld")
+    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld2")
     tests = fill(false, 10)
     for i in 1:10
-        @load dirs[i] parsed_args used_keys
+        dict = FileIO.load(dirs[i])
+        parsed_args = dict["parsed_args"]
+        used_keys = dict["used_keys"]
         tests[i] = filter(k->(k[1] in used_keys), parsed_args) == parsed_dicts[parsed_args["_HASH"]]
     end
 
@@ -71,10 +72,12 @@ function track_symbols_test()
         parsed = arg_parse(args; as_symbols=true)
         parsed_dicts[parsed[:_HASH]] = filter(k->(k[1] in used_keys), parsed)
     end
-    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld")
+    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld2")
     tests = fill(false, 10)
     for i in 1:10
-        @load dirs[i] parsed_args used_keys
+        dict = FileIO.load(dirs[i])
+        parsed_args = dict["parsed_args"]
+        used_keys = dict["used_keys"]
         tests[i] = filter(k->(k[1] in used_keys), parsed_args) == parsed_dicts[parsed_args[:_HASH]]
     end
 
@@ -92,10 +95,13 @@ function track_with_git_test()
         parsed = arg_parse(args; use_git_info=true)
         parsed_dicts[parsed["_HASH"]] = parsed
     end
-    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld")
+    dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld2")
     tests = fill(false, 10)
     for i in 1:10
-        @load dirs[i] parsed_args used_keys
+        # @load dirs[i] parsed_args used_keys
+        dict = FileIO.load(dirs[i])
+        parsed_args = dict["parsed_args"]
+        used_keys = dict["used_keys"]
         tests[i] = (==(filter(k->(k[1] in used_keys), parsed_args),
                        filter(k->(k[1] in used_keys), parsed_dicts[parsed_args["_HASH"]]))
                     &
