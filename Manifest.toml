@@ -39,6 +39,12 @@ git-tree-sha1 = "ff13fd99e4dd54f56eb064815f843bc992a871a2"
 uuid = "70588ee8-6100-5070-97c1-3cb50ed05fe8"
 version = "0.1.0"
 
+[[CSTParser]]
+deps = ["LibGit2", "Test", "Tokenize"]
+git-tree-sha1 = "437c93bc191cd55957b3f8dee7794b6131997c56"
+uuid = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
+version = "0.5.2"
+
 [[CategoricalArrays]]
 deps = ["Compat", "Future", "Missings", "Printf", "Reexport", "Requires"]
 git-tree-sha1 = "94d16e77dfacc59f6d6c1361866906dbb65b6f6b"
@@ -174,9 +180,9 @@ version = "0.10.0"
 
 [[InteractBase]]
 deps = ["Base64", "CSSUtil", "Colors", "Dates", "JSExpr", "JSON", "Knockout", "Observables", "OrderedCollections", "Random", "Test", "WebIO", "Widgets"]
-git-tree-sha1 = "4d794ab75e9fbeeb41c8e7205d35fe53b3836685"
+git-tree-sha1 = "83fc45f21bfec97e5cd56e790f6945497ab0f095"
 uuid = "d3863d7c-f0c8-5437-a7b4-3ae773c01009"
-version = "0.10.0"
+version = "0.10.1"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -226,10 +232,10 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MacroTools]]
-deps = ["Compat"]
-git-tree-sha1 = "3fd1a3022952128935b449c33552eb65895380c1"
+deps = ["CSTParser", "Compat", "DataStructures", "Test"]
+git-tree-sha1 = "daecd9e452f38297c686eba90dba2a6d5da52162"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.4.5"
+version = "0.5.0"
 
 [[Markdown]]
 deps = ["Base64"]
@@ -375,6 +381,12 @@ git-tree-sha1 = "8355cc559e85469cd4dbe927c375f61d3750e002"
 uuid = "b718987f-49a8-5099-9789-dcd902bef87d"
 version = "0.3.0"
 
+[[Tokenize]]
+deps = ["Printf", "Test"]
+git-tree-sha1 = "3e83f60b74911d3042d3550884ca2776386a02b8"
+uuid = "0796e94c-ce3b-5d07-9a54-7f471281c624"
+version = "0.5.3"
+
 [[TranscodingStreams]]
 deps = ["Pkg", "Random", "Test"]
 git-tree-sha1 = "f42956022d8084539f1d7219f632542b0ea686ce"
@@ -420,6 +432,6 @@ version = "1.5.2"
 
 [[Widgets]]
 deps = ["Colors", "Dates", "Observables", "OrderedCollections", "Test"]
-git-tree-sha1 = "9c65a62fa26d9e10752db0b828db460855fdc6e4"
+git-tree-sha1 = "c53befc70c6b91eaa2a9888c2f6ac2d92720a81b"
 uuid = "cc8bc4a8-27d6-5769-a93b-9d913e69aa62"
-version = "0.6.0"
+version = "0.6.1"
