@@ -12,3 +12,10 @@ A framework for managing hyper-parameter settings for machine learning experimen
 
 This repository is for making sure all your experiments are reproducible.
 
+
+
+## What's next.
+
+The goal is to make a convenient framework for data analysis for experiments in ML/RL. The goal is to create something like [mlflow](mlflow.org) for Julia. It might be worthwhile to actually take advantage of the mlflow framework, or even a similar framework for the future.
+
+
