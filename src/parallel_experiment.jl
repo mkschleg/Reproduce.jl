@@ -8,9 +8,8 @@ IN_SLURM && using ClusterManagers
 
 
 function job(experiment_file, args_iter; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=5, expand_args=false)
-
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        @info "This is an array Job! Time to "
+        @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
         @time task_job(experiment_file, args_iter, task_id;
                        exp_module_name=exp_module_name,
@@ -100,7 +99,7 @@ function task_job(experiment_file, args_iter, task_id; exp_module_name=:Main, ex
 
     include(exp_file)
     @info "$(exp_file) included for Job $(task_id)"
-    exp_func = getfield(getfield(Main, Symbol($mod_str)), Symbol($func_str))
+    exp_func = getfield(getfield(Main, Symbol(exp_module_name)), Symbol(exp_func_name))
     @info "Running $(task_it)"
     args = collect(args_iter)[task_id]
     if expand_args
