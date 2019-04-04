@@ -7,7 +7,7 @@ include("search.jl")
 export ArgIterator
 include("args_iter.jl")
 
-export parallel_experiment
+export job, create_experiment_dir
 include("parallel_experiment.jl")
 # greeting() = println("Hello World!")
 
