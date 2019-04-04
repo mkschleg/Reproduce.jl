@@ -6,7 +6,6 @@ using Logging
 const IN_SLURM = "SLURM_JOBID" in keys(ENV)
 IN_SLURM && using ClusterManagers
 
-
 function job(experiment_file, args_iter; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=5, expand_args=false)
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
@@ -55,28 +54,13 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
         func_str = string(exp_func_name)
         @everywhere global exp_file=$experiment_file
         @everywhere global expand_args=$expand_args
+
         @everywhere begin
-            try
-                id = myid()
-            catch
-                @info "myid not defined?"
-                id = 1
-            end
-        end
-        # @everywhere global exp_mod_name=$str
-        # @everywhere global exp_f_name=$exp_func_name
-        @everywhere begin
-            id = 1
-            try
-                id = myid()
-            catch
-                @info "myid not defined?"
-            end
             include(exp_file)
-            @info "$(exp_file) included on process $(id)"
+            @info "$(exp_file) included on process $(Distributed.myid())"
             exp_func = getfield(getfield(Main, Symbol($mod_str)), Symbol($func_str))
             experiment(args) = exp_func(args)
-            @info "Experiment built on process $(id)"
+            @info "Experiment built on process $(Distributed.myid())"
         end
 
         n = length(args_iter)
