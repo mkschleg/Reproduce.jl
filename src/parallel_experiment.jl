@@ -136,10 +136,11 @@ function create_experiment_dir(res_dir::String,
     write(f, "#+title: Experimental Notes for $(experiment_file)\n\n\n")
     write(f, "experiment module: $(string(exp_module_name))\n")
     write(f, "experiment function: $(string(exp_func_name))\n\n")
-    write(f, "$(args_iter.dict)\n")
-    write(f, "$(args_iter.arg_list)\n")
-    write(f, "$(args_iter.stable_arg)\n")
-
+    write(f, "#+BEGIN_SRC julia\n")
+    write(f, "dict = $(args_iter.dict)\n")
+    write(f, "arg_list = $(args_iter.arg_list)\n")
+    write(f, "stable_arg = $(args_iter.stable_arg)\n")
+    write(f, "#+END_SRC")
     close(f)
 
     return
