@@ -1,5 +1,4 @@
 using Distributed
-using Random
 using ProgressMeter
 using Logging
 
@@ -25,7 +24,7 @@ function job(experiment_file, args_iter; exp_module_name=:Main, exp_func_name=:m
 end
 
 
-function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=5, expand_args=false)
+function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=5, expand_args=false, project=".")
 
     pids = Array{Int64, 1}
     if IN_SLURM
@@ -35,9 +34,9 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
     else
         println(num_workers, " ", nworkers())
         if nworkers() == 1
-            pids = addprocs(num_workers;exeflags="--project=.")
+            pids = addprocs(num_workers;exeflags=["--project=$(project)", "--color=yes"])
         elseif nworkers() < num_workers
-            pids = addprocs((num_workers) - nworkers();exeflags="--project=.")
+            pids = addprocs((num_workers) - nworkers();exeflags=["--project=$(project)", "--color=yes"])
         else
             pids = procs()
         end
@@ -52,15 +51,20 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
 
         mod_str = string(exp_module_name)
         func_str = string(exp_func_name)
-        @everywhere global exp_file=$experiment_file
-        @everywhere global expand_args=$expand_args
+        @everywhere const global exp_file=$experiment_file
+        @everywhere const global expand_args=$expand_args
+        # @everywhere id = myid()
 
         @everywhere begin
+            eval(:(using Reproduce))
+            eval(:(using Distributed))
+            # eval(:(using ProgressMeter))
             include(exp_file)
-            @info "$(exp_file) included on process $(Distributed.myid())"
-            exp_func = getfield(getfield(Main, Symbol($mod_str)), Symbol($func_str))
+            @info "$(exp_file) included on process $(myid())"
+            mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
+            const global exp_func = getfield(mod, Symbol($func_str))
             experiment(args) = exp_func(args)
-            @info "Experiment built on process $(Distributed.myid())"
+            @info "Experiment built on process $(myid())"
         end
 
         n = length(args_iter)
@@ -72,19 +76,20 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
             end
 
             @async begin
-                @distributed (+) for (args_idx, args) in collect(args_iter)
+                Distributed.@distributed (+) for (args_idx, args) in collect(args_iter)
                     if expand_args
-                        experiment(args...)
+                        Main.exp_func(args...)
                     else
-                        experiment(args)
+                        Main.exp_func(args)
                     end
                     sleep(0.01)
-                    put!(channel,true)
+                    Distributed.put!(channel,true)
                     0
                 end
-                put!(channel, false)
+                Distributed.put!(channel, false)
             end
         end
+
 
     catch ex
         println(ex)
@@ -95,11 +100,12 @@ end
 
 function task_job(experiment_file, args_iter, task_id; exp_module_name=:Main, exp_func_name=:main_experiment, expand_args=false)
 
-    include(exp_file)
-    @info "$(exp_file) included for Job $(task_id)"
-    exp_func = getfield(getfield(Main, Symbol(exp_module_name)), Symbol(exp_func_name))
-    @info "Running $(task_it)"
-    args = collect(args_iter)[task_id]
+    include(experiment_file)
+    @info "$(experiment_file) included for Job $(task_id)"
+    mod = String(exp_module_name)=="Main" ? Main : getfield(Main, Symbol(exp_module_name))
+    exp_func = getfield(mod, Symbol(exp_func_name))
+    @info "Running $(task_id)"
+    args = collect(args_iter)[task_id][2]
     if expand_args
         exp_func(args...)
     else
