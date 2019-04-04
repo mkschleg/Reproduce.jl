@@ -111,3 +111,38 @@ function task_job(experiment_file, args_iter, task_id; exp_module_name=:Main, ex
 end
 
 
+function create_experiment_dir(res_dir::String,
+                               experiment_file::String,
+                               args_iter;
+                               exp_module_name=:Main,
+                               exp_func_name=:main_experiment,
+                               org_file=true, replace=false)
+
+    if isdir(res_dir)
+        if !replace
+            @info "directory already created - told to not replace..."
+            return
+        else
+            @info "directory already created - told to replace..."
+            rm(joinpath(res_dir, "notes.org"))
+        end
+    else
+        @info "creating experiment directory"
+        mkdir(res_dir)
+    end
+
+    f = open(joinpath(res_dir, "notes.org"), "w")
+
+    write(f, "#+title: Experimental Notes for $(experiment_file)\n\n\n")
+    write(f, "experiment module: $(string(exp_module_name))\n")
+    write(f, "experiment function: $(string(exp_func_name))\n\n")
+    write(f, "$(args_iter.dict)\n")
+    write(f, "$(args_iter.arg_list)\n")
+    write(f, "$(args_iter.stable_arg)\n")
+
+    close(f)
+
+    return
+end
+
+
