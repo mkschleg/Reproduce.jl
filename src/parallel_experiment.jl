@@ -66,6 +66,12 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
         # @everywhere global exp_mod_name=$str
         # @everywhere global exp_f_name=$exp_func_name
         @everywhere begin
+            id = 1
+            try
+                id = myid()
+            catch
+                @info "myid not defined?"
+            end
             include(exp_file)
             @info "$(exp_file) included on process $(id)"
             exp_func = getfield(getfield(Main, Symbol($mod_str)), Symbol($func_str))
