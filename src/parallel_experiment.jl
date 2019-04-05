@@ -1,6 +1,7 @@
 using Distributed
 using ProgressMeter
 using Logging
+using SharedArrays
 
 const IN_SLURM = "SLURM_JOBID" in keys(ENV)
 IN_SLURM && using ClusterManagers
@@ -58,6 +59,7 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
         @everywhere begin
             eval(:(using Reproduce))
             eval(:(using Distributed))
+            eval(:(using SharedArrays))
             # eval(:(using ProgressMeter))
             include(exp_file)
             @info "$(exp_file) included on process $(myid())"
@@ -70,26 +72,29 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
         n = length(args_iter)
         println(n)
 
+        job_id = SharedArray{Int64, 1}(n)
+
         @sync begin
             @async while take!(channel)
                 ProgressMeter.next!(p)
             end
 
             @async begin
-                Distributed.@distributed (+) for (args_idx, args) in collect(args_iter)
+                # Distributed.@distributed for (args_idx, args) in collect(args_iter)
+                for (args_idx, args) in collect(args_iter) @spawn begin
                     if expand_args
                         Main.exp_func(args...)
                     else
                         Main.exp_func(args)
                     end
-                    sleep(0.01)
                     Distributed.put!(channel,true)
-                    0
+                    job_id[args_idx] = myid()
+                end
                 end
                 Distributed.put!(channel, false)
             end
         end
-
+        return println(job_id)
 
     catch ex
         println(ex)
@@ -149,5 +154,3 @@ function create_experiment_dir(res_dir::String,
 
     return
 end
-
-
