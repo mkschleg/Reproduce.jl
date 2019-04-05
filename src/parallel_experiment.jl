@@ -2,6 +2,7 @@ using Distributed
 using ProgressMeter
 using Logging
 using SharedArrays
+using JLD2
 
 const IN_SLURM = "SLURM_JOBID" in keys(ENV)
 IN_SLURM && using ClusterManagers
@@ -75,8 +76,15 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
         job_id = SharedArray{Int64, 1}(n)
 
         @sync begin
-            @async while take!(channel)
-                ProgressMeter.next!(p)
+            @async begin
+                i = 0
+                while take!(channel)
+                    ProgressMeter.next!(p)
+                    i += 1
+                    if i == n
+                        break
+                    end
+                end
             end
 
             @async begin
@@ -87,14 +95,13 @@ function parallel_job(experiment_file, args_iter; exp_module_name=:Main, exp_fun
                     else
                         Main.exp_func(args)
                     end
-                    Distributed.put!(channel,true)
+                    Distributed.put!(channel, true)
                     job_id[args_idx] = myid()
                 end
                 end
-                Distributed.put!(channel, false)
             end
         end
-        return println(job_id)
+        return job_id
 
     catch ex
         println(ex)
@@ -151,6 +158,9 @@ function create_experiment_dir(res_dir::String,
     write(f, "stable_arg = $(args_iter.stable_arg)\n")
     write(f, "#+END_SRC")
     close(f)
+
+    settings_file = joinpath(res_dir, "settings.jld2")
+    @save settings_file args_iter
 
     return
 end
