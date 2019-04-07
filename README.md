@@ -1,6 +1,6 @@
 # Reproduce.jl
-[![Build Status](https://travis-ci.com/mkschleg/Reproduce.jl.svg?branch=master)](https://travis-ci.com/mkschleg/Reproduce.jl)
-[![codecov](https://codecov.io/gh/mkschleg/Reproduce.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mkschleg/Reproduce.jl)
+[![Build Status](https://travis-ci.com/mkschleg/Reproduce.jl.svg?branch=develop)](https://travis-ci.com/mkschleg/Reproduce.jl)
+[![codecov](https://codecov.io/gh/mkschleg/Reproduce.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/mkschleg/Reproduce.jl)
 
 
 
