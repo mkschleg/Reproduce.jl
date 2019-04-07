@@ -1,7 +1,12 @@
 
 module Reproduce
 
+
+
+export parse_args, @add_arg_table, ArgParseSettings
 include("parse.jl")
+
+export ItemCollection, search, details
 include("search.jl")
 
 export ArgIterator
