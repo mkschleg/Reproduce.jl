@@ -1,6 +1,6 @@
 using Logging
 
-import ArgParse, Git, FileIO
+import ArgParse, Git, FileIO, JLD2
 import ArgParse.@add_arg_table
 import ArgParse.ArgParseSettings
 
