@@ -1,5 +1,6 @@
 using Dates
 using CodeTracking
+using Git
 
 
 function create_experiment_dir(exp_dir::String;
@@ -67,6 +68,8 @@ function add_experiment(exp_dir::AbstractString,
 
     open(joinpath(exp_dir, "notes.org"), "a") do f
         exp_str = "* " * date_str * "\n\n" *
+            tab*"Git-head: $(Git.head())\n" *
+            tab*"Git-branch: $(Git.branch())\n" *
             tab*"experiment file: $(experiment_file)\n" *
             tab*"experiment module: $(string(exp_module_name))\n" *
             tab*"experiment function: $(string(exp_func_name))\n\n" *

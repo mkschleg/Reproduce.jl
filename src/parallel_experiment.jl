@@ -127,6 +127,7 @@ function parallel_job(experiment_file::AbstractString,
                         Main.exp_func(args, extra_args...)
                     end
                     Distributed.put!(channel, true)
+                    sleep(0.01)
                     job_id[args_idx] = myid()
                 end
                 end

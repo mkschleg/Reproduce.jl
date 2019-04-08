@@ -1,7 +1,7 @@
 using Reproduce
 
 const save_loc = "test_exp"
-const exp_file = "test/experiment.jl"
+const exp_file = "examples/experiment.jl"
 const exp_module_name = :Main
 const exp_func_name = :main_experiment
 
