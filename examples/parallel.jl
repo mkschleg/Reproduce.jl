@@ -12,7 +12,7 @@ end
 
 function test_experiment()
     arg_dict = Dict(
-        ["opt1"=>[1,2,3,4], "opt2"=>[5,6,7,8]]
+        ["opt1"=>collect(1:50), "opt2"=>[5,6,7,8]]
     )
     arg_list = ["opt1", "opt2"]
 
@@ -28,7 +28,9 @@ function test_experiment()
                    args_iterator;
                    settings_dir = "settings")
 
-    job(exp_file, args_iterator; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=6, extra_args=[save_loc])
+    ret = job(exp_file, args_iterator; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=6, extra_args=[save_loc])
+
+    post_experiment(save_loc, ret)
 
 end
 

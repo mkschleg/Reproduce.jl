@@ -16,7 +16,7 @@ export job, create_experiment_dir
 include("parallel_experiment.jl")
 # greeting() = println("Hello World!")
 
-export create_experiment_dir, add_experiment
+export create_experiment_dir, add_experiment, post_experiment
 include("exp_utils.jl")
 
 end # module

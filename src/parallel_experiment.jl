@@ -74,6 +74,10 @@ function parallel_job(experiment_file::AbstractString,
 
     println(nworkers(), " ", pids)
 
+    n = length(args_iter)
+    job_id = SharedArray{Int64, 1}(n)
+    finished_jobs = SharedArray(fill(false, n))
+
     try
 
         p = Progress(length(args_iter))
@@ -91,7 +95,7 @@ function parallel_job(experiment_file::AbstractString,
             eval(:(using Reproduce))
             eval(:(using Distributed))
             eval(:(using SharedArrays))
-            # eval(:(using ProgressMeter))
+            eval(:(using ProgressMeter))
             # println(extra_args)
             include(exp_file)
             @info "$(exp_file) included on process $(myid())"
@@ -101,44 +105,61 @@ function parallel_job(experiment_file::AbstractString,
             @info "Experiment built on process $(myid())"
         end
 
-        n = length(args_iter)
-        println(n)
-
-        job_id = SharedArray{Int64, 1}(n)
+        @info "Number of Jobs: $(n)"
 
         @sync begin
+
             @async begin
+                # println("Begin progress")
                 i = 0
-                while take!(channel)
-                    ProgressMeter.next!(p)
-                    i += 1
+                while true
+                    while isready(channel)
+                        take!(channel)
+                        ProgressMeter.next!(p)
+                        i += 1
+                    end
                     if i == n
                         break
                     end
+                    yield()
+                    # sleep(1)
                 end
             end
 
-            @async begin
-                # Distributed.@distributed for (args_idx, args) in collect(args_iter)
-                for (args_idx, args) in collect(args_iter) @spawn begin
+            # @async begin
+            @async @sync for (args_idx, args) in collect(args_iter) @spawn begin
+                try
                     if expand_args
                         Main.exp_func(args..., extra_args...)
                     else
                         Main.exp_func(args, extra_args...)
                     end
-                    Distributed.put!(channel, true)
-                    sleep(0.01)
-                    job_id[args_idx] = myid()
+                    finished_jobs[args_idx] = true
+                catch ex
+                    # @error "Exception Caught for job $(args_idx)\n" * string(ex)
+                    if isa(ex, InterruptException)
+                        # Distributed.interrupt()
+                        throw(InterruptException())
+                    end
+
                 end
-                end
+                Distributed.put!(channel, true)
+                job_id[args_idx] = myid()
             end
+            end
+
+            # pfor
+
+            # end
         end
 
-        return job_id
+        return findall((x)->x==false, finished_jobs)
 
     catch ex
         println(ex)
         Distributed.interrupt()
+        println("Here")
+        return findall((x)->x==false, finished_jobs)
     end
 
 end

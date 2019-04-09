@@ -80,7 +80,7 @@ function add_experiment(exp_dir::AbstractString,
             tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
             tab*"#Make Arguments" *
             tab*make_args_str *
-            tab*"#+END_SRC"
+            tab*"#+END_SRC\n\n"
         write(f, exp_str)
     end
 
@@ -88,4 +88,22 @@ function add_experiment(exp_dir::AbstractString,
 
 end
 
+
+function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1})
+
+    if "SLURM_ARRAY_TASK_ID" in keys(ENV)
+        @info "Post_experiment doesn't work with slurm job arrays."
+        return
+    end
+
+    tab = "\t"
+    date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
+    open(joinpath(exp_dir, "notes.org"), "a") do f
+
+        post_exp_str = tab*"Post Experiment: \n" *
+            tab*"Canceled Jobs: $(canceled_jobs)\n" *
+            tab*"Ended: $(date_str)\n"
+        write(f, post_exp_str)
+    end
+end
 
