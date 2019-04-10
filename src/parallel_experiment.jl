@@ -164,6 +164,7 @@ function parallel_job(experiment_file::AbstractString,
                     end
                     @warn "Exception encountered for job: $(arg_idx)"
                     if store_exceptions
+                        println("HERE")
                         trace = stacktrace(catch_backtrace())
                         exception_file(
                             joinpath(exception_loc, "job_$(arg_idx).exc"),
