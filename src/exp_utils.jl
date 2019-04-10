@@ -5,11 +5,20 @@ using FileIO, JLD2
 using Logging
 
 
-struct Exeriment
+struct Experiment
     dir::AbstractString
     file::AbstractString
     module_name::Union{String, Symbol}
     func_name::Union{String, Symbol}
+    args_iter::ArgIterator
+    hash::UInt64
+    function Experiment(dir::AbstractString,
+                        file::AbstractString,
+                        module_name::Union{String, Symbol},
+                        func_name::Union{String, Symbol},
+                        args_iter::ArgIterator)
+        new(dir, file, module_name, func_name, args_iter, hash(string(args_iter)))
+    end
 end
 
 
@@ -36,9 +45,10 @@ function create_experiment_dir(exp_dir::String;
     return
 end
 
-function get_settings_file(args_iterator::ArgIterator)
-    ai_str = string(args_iterator)
-    return "settings_0x"*string(hash(ai_str), base=16)*".jld2"
+function create_experiment_dir(exp::Experiment;
+                               kwargs...)
+    create_experiment_dir(exp.dir, kwargs...)
+    return
 end
 
 
@@ -46,7 +56,8 @@ function add_experiment(exp_dir::AbstractString,
                         experiment_file::AbstractString,
                         exp_module_name::AbstractString,
                         exp_func_name::AbstractString,
-                        args_iter::ArgIterator;
+                        args_iter::ArgIterator,
+                        hash::UInt64;
                         settings_dir="", add_all_tasks=false)
 
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
@@ -64,7 +75,7 @@ function add_experiment(exp_dir::AbstractString,
         mkdir(settings_dir)
     end
 
-    settings_file = joinpath(settings_dir, get_settings_file(args_iter))
+    settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
 
     date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
     tab = "\t"
@@ -101,6 +112,18 @@ function add_experiment(exp_dir::AbstractString,
 
 end
 
+function add_experiment(exp::Experiment;
+                        kwargs...)
+
+    add_experiment(exp.dir,
+                   exp.file,
+                   String(exp.module_name),
+                   String(exp.func_name),
+                   exp.args_iter,
+                   exp.hash;
+                   kwargs...)
+
+end
 
 function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1})
 
@@ -127,15 +150,10 @@ function post_experiment(exp_dir::AbstractString, finished_job::Bool)
         return
     end
 
-    # tab = "\t"
-    # date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
-    # open(joinpath(exp_dir, "notes.org"), "a") do f
+end
 
-    #     post_exp_str = tab*"Post Experiment: \n" *
-    #         tab*"Canceled Jobs: $(canceled_jobs)\n" *
-    #         tab*"Ended: $(date_str)\n"
-    #     write(f, post_exp_str)
-    # end
+function post_experiment(exp::Experiment, job_ret)
+    post_experiment(exp.dir, job_ret)
 end
 
 function exception_file(exc_file::AbstractString, job_id, exception, trace)

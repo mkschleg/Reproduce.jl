@@ -12,7 +12,7 @@ include("search.jl")
 export ArgIterator
 include("args_iter.jl")
 
-export create_experiment_dir, add_experiment, post_experiment
+export Experiment, create_experiment_dir, add_experiment, post_experiment
 include("exp_utils.jl")
 
 export job

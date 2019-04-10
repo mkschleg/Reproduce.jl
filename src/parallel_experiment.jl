@@ -10,7 +10,7 @@ IN_SLURM && using ClusterManagers
 
 
 """
-job(experiment_file, args_iter; exp_module_name, exp_func_name, num_workers, expand_args)
+job
 Interface into running a job.
 """
 
@@ -48,8 +48,17 @@ function job(experiment_file::AbstractString,
 end
 
 
+job(exp::Experiment; exception_dir="except", kwargs...) =
+    job(exp.file, exp.dir, exp.args_iter;
+        exp_module_name=exp.module_name,
+        exp_func_name=exp.func_name,
+        exception_dir="$(exception_dir)/exp_0x$(string(exp.hash, base=16))", kwargs...)
+
+
+
+
 """
-parallel_job(experiment_file::AbstractString, args_iter; exp_module_name::Union, exp_func_name, num_workers, expand_args, project)
+parallel_job
 
 Run a parallel job over the arguments presented by args_iter. `args_iter` can be a enumeration OR ArgIterator. Each job will be dedicated to a specific
 task. The experiment *must* save its own data! As this is not handled by this function (although could be added in the future.)
@@ -106,8 +115,6 @@ function parallel_job(experiment_file::AbstractString,
         @everywhere const global extra_args=$extra_args
         @everywhere const global store_exceptions=$store_exceptions
         @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
-        # @everywhere const global extra_args=$extra_args
-        # @everywhere id = myid()
 
         @everywhere begin
             eval(:(using Reproduce))
@@ -127,7 +134,7 @@ function parallel_job(experiment_file::AbstractString,
         @info "Number of Jobs: $(n)"
         exception_loc = joinpath(exp_dir, exception_dir)
         if store_exceptions && !isdir(exception_loc)
-            mkdir(exception_loc)
+            mkpath(exception_loc)
         end
 
         @sync begin
@@ -216,10 +223,9 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
                 exception_loc = joinpath(exp_dir, exception_dir)
                 if !isdir(exception_loc)
                     try
-                        mkdir(exception_loc)
+                        mkpath(exception_loc)
                     catch
                         sleep(1)
-                        mkdir(exception_loc)
                     end
                 end
                 exception_file(
