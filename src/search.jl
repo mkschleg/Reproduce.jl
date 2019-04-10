@@ -23,8 +23,7 @@ mutable struct ItemCollection
 end
 
 function ItemCollection(dir::AbstractString; settings_file="settings.jld2")
-
-    dir_list = readdir(glob"*/"*settings_file, dir)
+    dir_list = glob(joinpath(dir, "*", settings_file))
     items = Array{Item,1}()
     for p in dir_list
         append!(items, [Item(p)])
@@ -38,14 +37,14 @@ function search(dir::AbstractString, search_dict; settings_file="settings.jld2")
     itemCollection = ItemCollection(dir; settings_file=settings_file)
 
     dict_keys = keys(search_dict)
-    found_items = Array{Item, 1}(undef, length(itemCollection.items))
-    hash_codes = Array{UInt64, 1}(undef, length(itemCollection.items))
-    save_dirs = Array{String, 1}(undef, length(itemCollection.items))
+    found_items = Array{Item, 1}()
+    hash_codes = Array{UInt64, 1}()
+    save_dirs = Array{String, 1}()
     for (item_idx, item) in enumerate(itemCollection.items)
         if search_dict == filter(k->((k[1] in dict_keys)), item.parsed_args)
-            found_items[item_idx] = item
-            hash_codes[item_idx] = item.parsed_args["_HASH"]
-            save_dirs[item_idx] = item.parsed_args["_SAVE"]
+            push!(found_items, item)
+            push!(hash_codes, item.parsed_args["_HASH"])
+            push!(save_dirs, item.parsed_args["_SAVE"])
         end
     end
     return hash_codes, save_dirs, found_items

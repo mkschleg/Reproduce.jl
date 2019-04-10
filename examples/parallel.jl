@@ -1,7 +1,7 @@
 using Reproduce
 
 const save_loc = "test_exp"
-const exp_file = "test/experiment.jl"
+const exp_file = "examples/experiment.jl"
 const exp_module_name = :Main
 const exp_func_name = :main_experiment
 
@@ -12,7 +12,7 @@ end
 
 function test_experiment()
     arg_dict = Dict(
-        ["opt1"=>[1,2,3,4], "opt2"=>[5,6,7,8]]
+        ["opt1"=>collect(1:50), "opt2"=>[5,6,7,8]]
     )
     arg_list = ["opt1", "opt2"]
 
@@ -20,15 +20,28 @@ function test_experiment()
 
     args_iterator = ArgIterator(arg_dict, static_args; arg_list=arg_list, make_args=make_arguments)
 
-    create_experiment_dir(save_loc)
-    add_experiment(save_loc,
-                   exp_file,
-                   string(exp_module_name),
-                   string(exp_func_name),
-                   args_iterator;
-                   settings_dir = "settings")
 
-    job(exp_file, args_iterator; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=6, extra_args=[save_loc])
+    experiment = Experiment(save_loc,
+                            exp_file,
+                            exp_module_name,
+                            exp_func_name,
+                            args_iterator)
+
+    create_experiment_dir(experiment)
+    add_experiment(experiment; settings_dir="settings")
+    ret = job(experiment; num_workers=6, extra_args=[save_loc])
+    # create_experiment_dir(save_loc)
+    # add_experiment(save_loc,
+    #                exp_file,
+    #                string(exp_module_name),
+    #                string(exp_func_name),
+    #                args_iterator;
+    #                settings_dir = "settings",
+    #                )
+
+    # ret = job(exp_file, save_loc, args_iterator; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=6, extra_args=[save_loc])
+
+    post_experiment(experiment, ret)
 
 end
 

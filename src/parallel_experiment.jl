@@ -10,69 +10,98 @@ IN_SLURM && using ClusterManagers
 
 
 """
-job(experiment_file, args_iter; exp_module_name, exp_func_name, num_workers, expand_args)
+job
 Interface into running a job.
 """
 
-function job(experiment_file::AbstractString, args_iter;
+function job(experiment_file::AbstractString,
+             exp_dir::AbstractString,
+             args_iter;
              exp_module_name::Union{String, Symbol}=:Main,
              exp_func_name::Union{String, Symbol}=:main_experiment,
              num_workers::Integer=5,
              expand_args::Bool=false,
-             extra_args = [])
+             extra_args = [],
+             store_exceptions=true,
+             exception_dir="except")
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-        @time task_job(experiment_file, args_iter, task_id;
+        @time task_job(experiment_file, exp_dir, args_iter, task_id;
                        exp_module_name=exp_module_name,
                        exp_func_name=exp_func_name,
                        expand_args=expand_args,
-                       extra_args=extra_args)
+                       extra_args=extra_args,
+                       store_exceptions=store_exceptions,
+                       exception_dir=exception_dir)
     else
-        @time parallel_job(experiment_file, args_iter;
+        @time parallel_job(experiment_file, exp_dir, args_iter;
                            exp_module_name=exp_module_name,
                            exp_func_name=exp_func_name,
                            num_workers=num_workers,
                            expand_args=expand_args,
-                           extra_args=extra_args)
+                           extra_args=extra_args,
+                           store_exceptions=store_exceptions,
+                           exception_dir=exception_dir)
     end
 
 end
 
 
+job(exp::Experiment; exception_dir="except", kwargs...) =
+    job(exp.file, exp.dir, exp.args_iter;
+        exp_module_name=exp.module_name,
+        exp_func_name=exp.func_name,
+        exception_dir="$(exception_dir)/exp_0x$(string(exp.hash, base=16))", kwargs...)
+
+
+
+
 """
-parallel_job(experiment_file::AbstractString, args_iter; exp_module_name::Union, exp_func_name, num_workers, expand_args, project)
+parallel_job
 
 Run a parallel job over the arguments presented by args_iter. `args_iter` can be a enumeration OR ArgIterator. Each job will be dedicated to a specific
 task. The experiment *must* save its own data! As this is not handled by this function (although could be added in the future.)
 """
 
 function parallel_job(experiment_file::AbstractString,
+                      exp_dir::AbstractString,
                       args_iter;
                       exp_module_name::Union{String, Symbol}=:Main,
                       exp_func_name::Union{String, Symbol}=:main_experiment,
-                      num_workers=5,
+                      num_workers=1,
                       expand_args=false,
                       project=".",
-                      extra_args=[])
+                      extra_args=[],
+                      store_exceptions=true,
+                      exception_dir="except", verbose=false)
 
+    num_add_workers = num_workers - 1
     pids = Array{Int64, 1}
-    if IN_SLURM
-        # assume started fresh julia instance...
-        pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
-        print("\n")
-    else
-        println(num_workers, " ", nworkers())
-        if nworkers() == 1
-            pids = addprocs(num_workers;exeflags=["--project=$(project)", "--color=yes"])
-        elseif nworkers() < num_workers
-            pids = addprocs((num_workers) - nworkers();exeflags=["--project=$(project)", "--color=yes"])
+
+    if num_add_workers != 0
+        if IN_SLURM
+            # assume started fresh julia instance...
+            pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
+            print("\n")
         else
-            pids = procs()
+            println(num_workers, " ", nworkers())
+            if nworkers() == 1
+                pids = addprocs(num_workers;exeflags=["--project=$(project)", "--color=yes"])
+            elseif nworkers() < num_workers
+                pids = addprocs((num_workers) - nworkers();exeflags=["--project=$(project)", "--color=yes"])
+            else
+                pids = procs()
+            end
         end
     end
 
     println(nworkers(), " ", pids)
+
+    n = length(args_iter)
+    job_ids = SharedArray{Int64, 1}(n)
+    finished_jobs = SharedArray(fill(false, n))
+
 
     try
 
@@ -84,8 +113,8 @@ function parallel_job(experiment_file::AbstractString,
         @everywhere const global exp_file=$experiment_file
         @everywhere const global expand_args=$expand_args
         @everywhere const global extra_args=$extra_args
-        # @everywhere const global extra_args=$extra_args
-        # @everywhere id = myid()
+        @everywhere const global store_exceptions=$store_exceptions
+        @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
 
         @everywhere begin
             eval(:(using Reproduce))
@@ -99,66 +128,114 @@ function parallel_job(experiment_file::AbstractString,
             const global exp_func = getfield(mod, Symbol($func_str))
             experiment(args) = exp_func(args)
             @info "Experiment built on process $(myid())"
+
         end
 
-        n = length(args_iter)
-        println(n)
-
-        job_id = SharedArray{Int64, 1}(n)
+        @info "Number of Jobs: $(n)"
+        exception_loc = joinpath(exp_dir, exception_dir)
+        if store_exceptions && !isdir(exception_loc)
+            mkpath(exception_loc)
+        end
 
         @sync begin
+
             @async begin
+                # println("Begin progress")
                 i = 0
-                while take!(channel)
-                    ProgressMeter.next!(p)
-                    i += 1
-                    if i == n
-                        break
+                while i < n
+                    while isready(channel)
+                        v = take!(channel)
+                        ProgressMeter.next!(p)
+                        i += 1
                     end
+                    yield()
                 end
             end
 
-            @async begin
-                # Distributed.@distributed for (args_idx, args) in collect(args_iter)
-                for (args_idx, args) in collect(args_iter) @spawn begin
+            # @async begin
+            @async @sync for (job_id, args) in collect(args_iter) @spawn begin
+                try
                     if expand_args
                         Main.exp_func(args..., extra_args...)
                     else
                         Main.exp_func(args, extra_args...)
                     end
-                    Distributed.put!(channel, true)
-                    job_id[args_idx] = myid()
+                    finished_jobs[job_id] = true
+                catch ex
+                    if isa(ex, InterruptException)
+                        throw(InterruptException())
+                    end
+                    if verbose
+                        @warn "Exception encountered for job: $(job_id)"
+                    end
+                    if store_exceptions
+                        exception_file(
+                            joinpath(exception_loc, "job_$(job_id).exc"),
+                            job_id, ex, stacktrace(catch_backtrace()))
+                    end
                 end
-                end
+                Distributed.put!(channel, true)
+                job_ids[job_id] = myid()
             end
-        end
+            end
 
-        return job_id
+        end
 
     catch ex
         println(ex)
         Distributed.interrupt()
+        # return findall((x)->x==false, finished_jobs)
     end
+
+    return findall((x)->x==false, finished_jobs)
 
 end
 
-function task_job(experiment_file::AbstractString, args_iter, task_id::Integer;
+function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
+                  args_iter, task_id::Integer;
                   exp_module_name::Union{String, Symbol}=:Main,
                   exp_func_name::Union{String, Symbol}=:main_experiment,
                   expand_args::Bool=false,
-                  extra_args=[])
+                  extra_args=[],
+                  store_exceptions=true,
+                  exception_dir="except")
 
-    include(experiment_file)
-    @info "$(experiment_file) included for Job $(task_id)"
-    mod = String(exp_module_name)=="Main" ? Main : getfield(Main, Symbol(exp_module_name))
-    exp_func = getfield(mod, Symbol(exp_func_name))
-    @info "Running $(task_id)"
-    args = collect(args_iter)[task_id][2]
-    if expand_args
-        exp_func(args..., extra_args...)
-    else
-        exp_func(args, extra_args...)
+    mod_str = string(exp_module_name)
+    func_str = string(exp_func_name)
+
+    @everywhere begin
+        include($experiment_file)
+        mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
+        const global exp_func = getfield(mod, Symbol($func_str))
     end
 
+    args = collect(args_iter)[task_id][2]
+    @sync @async begin
+        try
+            if expand_args
+                Main.exp_func(args..., extra_args...)
+            else
+                Main.exp_func(args, extra_args...)
+            end
+        catch ex
+            @warn "Exception encountered for job: $(task_id)"
+            if store_exceptions
+                exception_loc = joinpath(exp_dir, exception_dir)
+                if !isdir(exception_loc)
+                    try
+                        mkpath(exception_loc)
+                    catch
+                        sleep(1)
+                    end
+                end
+                exception_file(
+                    joinpath(exception_loc, "job_$(task_id).exc"),
+                    task_id, ex, stacktrace(catch_backtrace()))
+                return false
+            end
+            throw(ex)
+        end
+    end
+    return true
 end
 

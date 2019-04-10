@@ -22,7 +22,13 @@ function main_experiment(args::Vector{String}, saveloc::String="default_save_loc
     arg_settings = arg_parse_settings()
     parsed = parse_args(args, arg_settings, saveloc)
     j = 0
-    sleep(0.1*(parsed["opt1"]^4))
+    if parsed["opt1"] == 2
+        throw("Oh No!!!")
+    end
+    # sleep(0.1*(parsed["opt1"]^4))
+    for i in 1:parsed["opt1"]^3
+        j += i
+    end
     @save joinpath(parsed["_SAVE"], "data.jld2") args
 
     return j

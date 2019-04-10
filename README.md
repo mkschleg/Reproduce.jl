@@ -1,21 +1,32 @@
 # Reproduce.jl
-[![Build Status](https://travis-ci.com/mkschleg/Reproduce.jl.svg?branch=master)](https://travis-ci.com/mkschleg/Reproduce.jl)
-[![codecov](https://codecov.io/gh/mkschleg/Reproduce.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mkschleg/Reproduce.jl)
+[![Build Status](https://travis-ci.com/mkschleg/Reproduce.jl.svg?branch=develop)](https://travis-ci.com/mkschleg/Reproduce.jl)
+[![codecov](https://codecov.io/gh/mkschleg/Reproduce.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/mkschleg/Reproduce.jl)
 
 
 
-What were my hyper-parameter settings again?
+How did I get these results?
 
-A framework for managing hyper-parameter settings for machine learning experiments based on LiteTrace from Borealis.
+A framework for managing hyper-parameter settings, and running experiments. Lightly based on litetracer from Borealis.
 
 ## What is this?
 
-This repository is for making sure all your experiments are reproducible.
+This repository is for giving you the tools you need to make experiments reproducible. This repository is mostly built around machine learning and reinforcement learning projects, but there is no reason it is restricted to these types of projects.
 
+## How To use
+
+The best way to see how to use this repository is in the examples folder. [parallel.jl](examples/parallel.jl) shows all the parallel and experiment utilities in action, while running an experiment in [experiment.jl](examples/experiment.jl) which shows off the data management, and arg parsing.
 
 
 ## What's next.
 
 The goal is to make a convenient framework for data analysis for experiments in ML/RL. The goal is to create something like [mlflow](mlflow.org) for Julia. It might be worthwhile to actually take advantage of the mlflow framework, or even a similar framework for the future.
 
+## TODOs
 
+- [ ] Docs
+- [ ] Data management and Plotting utilities
+- [ ] Frontend for visualizing data.
+- [ ] Testing with slurm backend.
+- [ ] More examples.
+
+HELP WANTED! Contact me via issues panel, or setup a PR.
