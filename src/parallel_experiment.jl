@@ -65,7 +65,7 @@ function parallel_job(experiment_file::AbstractString,
                       project=".",
                       extra_args=[],
                       store_exceptions=true,
-                      exception_dir="except")
+                      exception_dir="except", verbose=false)
 
     num_add_workers = num_workers - 1
     pids = Array{Int64, 1}
@@ -158,7 +158,9 @@ function parallel_job(experiment_file::AbstractString,
                     if isa(ex, InterruptException)
                         throw(InterruptException())
                     end
-                    @warn "Exception encountered for job: $(job_id)"
+                    if verbose
+                        @warn "Exception encountered for job: $(job_id)"
+                    end
                     if store_exceptions
                         exception_file(
                             joinpath(exception_loc, "job_$(job_id).exc"),
