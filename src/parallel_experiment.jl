@@ -162,7 +162,7 @@ function parallel_job(experiment_file::AbstractString,
                         # Distributed.interrupt()
                         throw(InterruptException())
                     end
-
+                    @warn "Exception encountered for job: $(task_id)"
                     if store_exceptions
                         trace = stacktrace(catch_backtrace())
                         exception_file(
