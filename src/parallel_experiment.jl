@@ -162,7 +162,7 @@ function parallel_job(experiment_file::AbstractString,
                         # Distributed.interrupt()
                         throw(InterruptException())
                     end
-                    @warn "Exception encountered for job: $(task_id)"
+                    @warn "Exception encountered for job: $(arg_idx)"
                     if store_exceptions
                         trace = stacktrace(catch_backtrace())
                         exception_file(
@@ -198,11 +198,6 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
                   store_exceptions=true,
                   exception_dir="except")
 
-
-
-    # @everywhere const global exp_file=$experiment_file
-    # @everywhere const global extra_args=$extra_args
-    # @everywhere id = myid()
     mod_str = string(exp_module_name)
     func_str = string(exp_func_name)
 
@@ -210,16 +205,9 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
         include($experiment_file)
         mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
         const global exp_func = getfield(mod, Symbol($func_str))
-        println(exp_func)
     end
 
-    # @everywhere begin
-    #     include(experiment_file)
-    #     exp_func = exp_func_name
-    # end
-
     args = collect(args_iter)[task_id][2]
-    println("Here")
     @sync @async begin
         try
             if expand_args
