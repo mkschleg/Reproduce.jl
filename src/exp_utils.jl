@@ -146,7 +146,8 @@ function exception_file(exc_file::AbstractString, job_id, exception, trace)
 
     open(exc_file, "w") do f
         exception_string =
-            "Exception for job_id: $(job_id)\n"
+            "Exception for job_id: $(job_id)\n\n" * string(exception) * "\n\n"
+
         write(f, exception_string)
         Base.show_backtrace(f, trace)
     end
