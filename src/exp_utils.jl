@@ -1,6 +1,16 @@
 using Dates
 using CodeTracking
 using Git
+using FileIO, JLD2
+using Logging
+
+
+struct Exeriment
+    dir::AbstractString
+    file::AbstractString
+    module_name::Union{String, Symbol}
+    func_name::Union{String, Symbol}
+end
 
 
 function create_experiment_dir(exp_dir::String;
@@ -84,7 +94,10 @@ function add_experiment(exp_dir::AbstractString,
         write(f, exp_str)
     end
 
-    @save settings_file args_iter make_args_str
+    FileIO.save(settings_file,
+                Dict{String, Any}(
+                    "args_iter"=>args_iter,
+                    "make_args_str"=>make_args_str))
 
 end
 
@@ -106,4 +119,40 @@ function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1}
         write(f, post_exp_str)
     end
 end
+
+function post_experiment(exp_dir::AbstractString, finished_job::Bool)
+
+    if "SLURM_ARRAY_TASK_ID" in keys(ENV)
+        @info "Post_experiment not supported with slurm job arrays."
+        return
+    end
+
+    # tab = "\t"
+    # date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
+    # open(joinpath(exp_dir, "notes.org"), "a") do f
+
+    #     post_exp_str = tab*"Post Experiment: \n" *
+    #         tab*"Canceled Jobs: $(canceled_jobs)\n" *
+    #         tab*"Ended: $(date_str)\n"
+    #     write(f, post_exp_str)
+    # end
+end
+
+function exception_file(exc_file::AbstractString, job_id, exception, trace)
+
+    if isfile(exc_file)
+        @warn "$(exc_file) already exists. Overwriting..."
+    end
+
+    open(exc_file, "w") do f
+        exception_string =
+            "Exception for job_id: $(job_id)\n"
+        write(f, exception_string)
+        Base.show_backtrace(f, trace)
+    end
+
+    return
+end
+
+
 

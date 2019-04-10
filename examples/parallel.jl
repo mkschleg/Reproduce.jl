@@ -26,9 +26,10 @@ function test_experiment()
                    string(exp_module_name),
                    string(exp_func_name),
                    args_iterator;
-                   settings_dir = "settings")
+                   settings_dir = "settings",
+                   )
 
-    ret = job(exp_file, args_iterator; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=6, extra_args=[save_loc])
+    ret = job(exp_file, save_loc, args_iterator; exp_module_name=:Main, exp_func_name=:main_experiment, num_workers=6, extra_args=[save_loc])
 
     post_experiment(save_loc, ret)
 
