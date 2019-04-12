@@ -6,14 +6,19 @@ import Git, FileIO, JLD2
 
 
 
-HASH_KEY="_HASH"
-SAVE_NAME_KEY="_SAVE"
-GIT_INFO_KEY="_GIT_INFO"
+const HASH_KEY="_HASH"
+const SAVE_NAME_KEY="_SAVE"
+const GIT_INFO_KEY="_GIT_INFO"
 
 make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(hashed,base=16))"
 
 
 # make_save_name(hashed) = make_save_name(hashed, 0)
+
+get_save_dir(parsed::Dict) = parsed[keytype(parsed)(SAVE_NAME_KEY)]
+get_hash(parsed::Dict) = parsed[keytype(parsed)(HASH_KEY)]
+get_git_info(parsed::Dict) = parsed[keytype(parsed)(GIT_INFO_KEY)]
+
 
 """
     create_info!
@@ -94,7 +99,6 @@ function default_save_str(parsed, use_keys; save_dir="RP")
     dir = joinpath(homedir, strs...)
     return dir
 end
-
 
 function create_custom_info!(parsed_args::Dict,
                              save_dir::String;
