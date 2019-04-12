@@ -3,7 +3,14 @@ module Reproduce
 
 
 
-export create_info!, create_info, create_custom_info!, create_custom_info
+export
+    create_info!,
+    create_info,
+    create_custom_info!,
+    create_custom_info,
+    get_save_dir,
+    get_hash,
+    get_git_info
 include("parse.jl")
 
 export ItemCollection, search, details
