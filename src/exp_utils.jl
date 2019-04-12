@@ -61,9 +61,9 @@ function add_experiment(exp_dir::AbstractString,
                         settings_dir="", add_all_tasks=false)
 
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        if parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) != 1 || !add_all_tasks
+        if parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) != 1 && !add_all_tasks
             job_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-            @info "Told to not add all experiments... job_id:$(job_id)"
+            @info "Told to not add all experiments... job_id : $(job_id) $(job_id == 1)"
             return
         end
     end
