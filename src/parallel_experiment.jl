@@ -47,6 +47,27 @@ function job(experiment_file::AbstractString,
 
 end
 
+function job(experiment_file::AbstractString,
+             exp_dir::AbstractString,
+             args_iter,
+             task_id::Integer;
+             exp_module_name::Union{String, Symbol}=:Main,
+             exp_func_name::Union{String, Symbol}=:main_experiment,
+             num_workers::Integer=5,
+             expand_args::Bool=false,
+             extra_args = [],
+             store_exceptions=true,
+             exception_dir="except")
+    @info "This is a task job! ID is $(task_id)"
+    @time task_job(experiment_file, exp_dir, args_iter, task_id;
+                   exp_module_name=exp_module_name,
+                   exp_func_name=exp_func_name,
+                   expand_args=expand_args,
+                   extra_args=extra_args,
+                   store_exceptions=store_exceptions,
+                   exception_dir=exception_dir)
+end
+
 
 job(exp::Experiment; exception_dir="except", kwargs...) =
     job(exp.file, exp.dir, exp.args_iter;
@@ -54,7 +75,11 @@ job(exp::Experiment; exception_dir="except", kwargs...) =
         exp_func_name=exp.func_name,
         exception_dir="$(exception_dir)/exp_0x$(string(exp.hash, base=16))", kwargs...)
 
-
+job(exp::Experiment, job_id::Integer; exception_dir="except", kwargs...) =
+    job(exp.file, exp.dir, exp.args_iter, job_id;
+        exp_module_name=exp.module_name,
+        exp_func_name=exp.func_name,
+        exception_dir="$(exception_dir)/exp_0x$(string(exp.hash, base=16))", kwargs...)
 
 
 """

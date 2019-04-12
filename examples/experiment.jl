@@ -20,7 +20,8 @@ function main_experiment(args::Vector{String}, saveloc::String="default_save_loc
 
 
     arg_settings = arg_parse_settings()
-    parsed = parse_args(args, arg_settings, saveloc)
+    parsed = parse_args(args, arg_settings)
+    create_info!(parsed, saveloc)
     j = 0
     if parsed["opt1"] == 2
         throw("Oh No!!!")

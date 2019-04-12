@@ -19,9 +19,10 @@ function arg_parse(args; use_git_info=false, as_symbols=false)
         arg_type = String
         required = true
     end
-    parsed = parse_args(args, s, TEST_DIR;
-                        use_git_info=use_git_info,
-                        as_symbols=as_symbols)
+
+    parsed = create_info(args, s, TEST_DIR;
+                         use_git_info=use_git_info,
+                         as_symbols=as_symbols)
     return parsed
 end
 

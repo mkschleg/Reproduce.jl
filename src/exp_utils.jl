@@ -99,7 +99,7 @@ function add_experiment(exp_dir::AbstractString,
             tab*"dict = $(args_iter.dict)\n" *
             tab*"arg_list = $(args_iter.arg_list)\n" *
             tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
-            tab*"#Make Arguments" *
+            tab*"#Make Arguments\n" *
             tab*make_args_str *
             tab*"#+END_SRC\n\n"
         write(f, exp_str)
@@ -146,7 +146,7 @@ end
 function post_experiment(exp_dir::AbstractString, finished_job::Bool)
 
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        @info "Post_experiment not supported with slurm job arrays."
+        @info "Post_experiment not supported with task jobs."
         return
     end
 

@@ -3,7 +3,7 @@ module Reproduce
 
 
 
-export parse_args, @add_arg_table, ArgParseSettings
+export create_info!, create_info, create_custom_info!, create_custom_info
 include("parse.jl")
 
 export ItemCollection, search, details
