@@ -35,7 +35,17 @@ function create_experiment_dir(exp_dir::String;
         end
     else
         @info "creating experiment directory"
-        mkdir(exp_dir)
+        # mkdir(exp_dir)
+        try
+            mkdir(exp_dir)
+        catch ex
+            @info "Somebody else created directory... Waiting"
+            if isa(ex, SystemError) && ex.errnum == 17
+                sleep(0.1) # Other Process Made folder. Waiting...
+            else
+                throw(ex)
+            end
+        end
     end
 
     f = open(joinpath(exp_dir, "notes.org"), "w")
@@ -153,12 +163,7 @@ function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1}
 end
 
 function post_experiment(exp_dir::AbstractString, finished_job::Bool)
-
-    if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        @info "Post_experiment not supported with task jobs."
-        return
-    end
-
+    @info "Post_experiment not supported with task jobs."
 end
 
 function post_experiment(exp::Experiment, job_ret)
