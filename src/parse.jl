@@ -67,7 +67,8 @@ function create_info!(parsed_args::Dict,
 
     settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
     save_settings_file = joinpath(save_settings_path, settings_file)
-    settings_dict |> FileIO.save(save_settings_file)
+    # settings_dict |> FileIO.save(save_settings_file)
+    JLD2.@save save_settings_file settings_dict
 
 end
 
@@ -126,7 +127,8 @@ function create_custom_info!(parsed_args::Dict,
 
     settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
     save_settings_file = joinpath(save_path, settings_file)
-    settings_dict |> FileIO.save(save_settings_file)
+    # settings_dict |> FileIO.save(save_settings_file)
+    JLD2.@save save_settings_file settings_dict
 end
 
 function create_custom_info(arg_list::Vector{String},
