@@ -104,6 +104,8 @@ function parallel_job(experiment_file::AbstractString,
     num_add_workers = num_workers - 1
     pids = Array{Int64, 1}
 
+    args_list = collect(args_iter)
+
     if num_add_workers != 0
         if IN_SLURM
             # assume started fresh julia instance...
@@ -126,7 +128,7 @@ function parallel_job(experiment_file::AbstractString,
     n = length(args_iter)
     job_ids = SharedArray{Int64, 1}(n)
     finished_jobs = SharedArray(fill(false, n))
-
+    
 
     try
 
@@ -178,7 +180,7 @@ function parallel_job(experiment_file::AbstractString,
             end
 
             # @async begin
-            @async @sync for (job_id, args) in collect(args_iter) @spawn begin
+            @async @sync for (job_id, args) in args_list @spawn begin
                 try
                     if expand_args
                         Main.exp_func(args..., extra_args...)

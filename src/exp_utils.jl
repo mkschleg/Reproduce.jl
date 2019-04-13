@@ -73,7 +73,15 @@ function add_experiment(exp_dir::AbstractString,
     settings_dir = joinpath(exp_dir, settings_dir)
 
     if settings_dir != "" && !isdir(settings_dir)
-        mkdir(settings_dir)
+        try
+            mkdir(settings_dir)
+        catch ex
+            if isa(ex, SystemError) && ex.errnum == 17
+                sleep(0.1) # Other Process Made folder. Waiting...
+            else
+                throw(ex)
+            end
+        end
     end
 
     settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
