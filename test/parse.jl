@@ -1,5 +1,5 @@
 module PARSE_TESTS
-using Reproduce, Test, Git, FileIO
+using Reproduce, Test, Git, FileIO, JLD2
 
 TEST_DIR = "TEST_DIR"
 
@@ -54,7 +54,8 @@ function track_test()
     dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld2")
     tests = fill(false, 10)
     for i in 1:10
-        dict = FileIO.load(dirs[i])
+        @load dirs[i] settings_dict
+        dict = settings_dict
         parsed_args = dict["parsed_args"]
         used_keys = dict["used_keys"]
         tests[i] = filter(k->(k[1] in used_keys), parsed_args) == parsed_dicts[parsed_args["_HASH"]]
@@ -76,7 +77,8 @@ function track_symbols_test()
     dirs = (TEST_DIR*"/").*joinpath.(readdir(TEST_DIR), "settings.jld2")
     tests = fill(false, 10)
     for i in 1:10
-        dict = FileIO.load(dirs[i])
+        @load dirs[i] settings_dict
+        dict = settings_dict
         parsed_args = dict["parsed_args"]
         used_keys = dict["used_keys"]
         tests[i] = filter(k->(k[1] in used_keys), parsed_args) == parsed_dicts[parsed_args[:_HASH]]
@@ -100,7 +102,8 @@ function track_with_git_test()
     tests = fill(false, 10)
     for i in 1:10
         # @load dirs[i] parsed_args used_keys
-        dict = FileIO.load(dirs[i])
+        @load dirs[i] settings_dict
+        dict = settings_dict
         parsed_args = dict["parsed_args"]
         used_keys = dict["used_keys"]
         tests[i] = (==(filter(k->(k[1] in used_keys), parsed_args),
