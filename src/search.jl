@@ -16,7 +16,7 @@ struct Item
 end
 
 function Item(settings_file::AbstractString)
-    settings_dict = File.io(settings_file)
+    settings_dict = FileIO(settings_file)
     dict = settings_dict
     if "settings_dict" ∈ keys(settings_dict)
         dict = settings_dict["settings_dict"]
