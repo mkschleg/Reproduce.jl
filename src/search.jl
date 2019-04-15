@@ -16,8 +16,11 @@ struct Item
 end
 
 function Item(settings_file::AbstractString)
-    @load settings_file settings_dict
+    settings_dict = File.io(settings_file)
     dict = settings_dict
+    if "settings_dict" ∈ keys(settings_dict)
+        dict = settings_dict["settings_dict"]
+    end
     parsed_args = dict["parsed_args"]
     used_keys = dict["used_keys"]
     return Item(settings_file, parsed_args, used_keys)
