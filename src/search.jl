@@ -16,10 +16,9 @@ struct Item
 end
 
 function Item(settings_file::AbstractString)
-    settings_dict = FileIO.load(settings_file)
-    dict = settings_dict
-    if "settings_dict" ∈ keys(settings_dict)
-        dict = settings_dict["settings_dict"]
+    dict = FileIO.load(settings_file)
+    if "settings_dict" ∈ keys(dict)
+        dict = dict["settings_dict"]
     end
     parsed_args = dict["parsed_args"]
     used_keys = dict["used_keys"]
@@ -105,7 +104,7 @@ end
 
 get difference of the list of items.
 """
-function diff(items::Array{Reproduce.Item, 1};
+function Base.diff(items::Array{Reproduce.Item, 1};
               exclude_keys::Union{Array{String,1}, Array{Symbol,1}} = Array{String, 1}(),
               exclude_parse_values::Bool=true)
     kt = keytype(items[1].parsed_args)
