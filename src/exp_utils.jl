@@ -1,7 +1,8 @@
 using Dates
 using CodeTracking
 using Git
-using FileIO, JLD2
+# using FileIO,
+using JLD2
 using Logging
 
 
@@ -35,7 +36,17 @@ function create_experiment_dir(exp_dir::String;
         end
     else
         @info "creating experiment directory"
-        mkdir(exp_dir)
+        # mkdir(exp_dir)
+        try
+            mkdir(exp_dir)
+        catch ex
+            @info "Somebody else created directory... Waiting"
+            if isa(ex, SystemError) && ex.errnum == 17
+                sleep(0.1) # Other Process Made folder. Waiting...
+            else
+                throw(ex)
+            end
+        end
     end
 
     f = open(joinpath(exp_dir, "notes.org"), "w")
@@ -61,8 +72,9 @@ function add_experiment(exp_dir::AbstractString,
                         settings_dir="", add_all_tasks=false)
 
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        if parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) != 1 || !add_all_tasks
-            @info "Told to not add all experiments..."
+        if parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) != 1 && !add_all_tasks
+            job_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+            @info "Told to not add all experiments... job_id : $(job_id) $(job_id == 1)"
             return
         end
     end
@@ -72,7 +84,15 @@ function add_experiment(exp_dir::AbstractString,
     settings_dir = joinpath(exp_dir, settings_dir)
 
     if settings_dir != "" && !isdir(settings_dir)
-        mkdir(settings_dir)
+        try
+            mkdir(settings_dir)
+        catch ex
+            if isa(ex, SystemError) && ex.errnum == 17
+                sleep(0.1) # Other Process Made folder. Waiting...
+            else
+                throw(ex)
+            end
+        end
     end
 
     settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
@@ -100,7 +120,7 @@ function add_experiment(exp_dir::AbstractString,
             tab*"arg_list = $(args_iter.arg_list)\n" *
             tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
             tab*"#Make Arguments\n" *
-            tab*make_args_str *
+            tab*make_args_str*"\n" *
             tab*"#+END_SRC\n\n"
         write(f, exp_str)
     end
@@ -144,12 +164,7 @@ function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1}
 end
 
 function post_experiment(exp_dir::AbstractString, finished_job::Bool)
-
-    if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        @info "Post_experiment not supported with task jobs."
-        return
-    end
-
+    @info "Post_experiment not supported with task jobs."
 end
 
 function post_experiment(exp::Experiment, job_ret)

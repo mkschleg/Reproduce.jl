@@ -12,9 +12,6 @@ const GIT_INFO_KEY="_GIT_INFO"
 
 make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(hashed,base=16))"
 
-
-# make_save_name(hashed) = make_save_name(hashed, 0)
-
 get_save_dir(parsed::Dict) = parsed[keytype(parsed)(SAVE_NAME_KEY)]
 get_hash(parsed::Dict) = parsed[keytype(parsed)(HASH_KEY)]
 get_git_info(parsed::Dict) = parsed[keytype(parsed)(GIT_INFO_KEY)]
@@ -65,10 +62,9 @@ function create_info!(parsed_args::Dict,
         end
     end
 
-    settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
+    # settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
     save_settings_file = joinpath(save_settings_path, settings_file)
-    settings_dict |> FileIO.save(save_settings_file)
-
+    JLD2.@save save_settings_file parsed_args used_keys
 end
 
 function create_info(arg_list::Vector{String},
@@ -124,9 +120,9 @@ function create_custom_info!(parsed_args::Dict,
         end
     end
 
-    settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
+    # settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
     save_settings_file = joinpath(save_path, settings_file)
-    settings_dict |> FileIO.save(save_settings_file)
+    JLD2.@save save_settings_file parsed_args used_keys
 end
 
 function create_custom_info(arg_list::Vector{String},
