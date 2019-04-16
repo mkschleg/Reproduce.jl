@@ -120,7 +120,7 @@ function add_experiment(exp_dir::AbstractString,
             tab*"arg_list = $(args_iter.arg_list)\n" *
             tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
             tab*"#Make Arguments\n" *
-            tab*make_args_str *
+            tab*make_args_str*"\n" *
             tab*"#+END_SRC\n\n"
         write(f, exp_str)
     end

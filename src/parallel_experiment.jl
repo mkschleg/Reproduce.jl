@@ -105,18 +105,22 @@ function parallel_job(experiment_file::AbstractString,
     pids = Array{Int64, 1}
 
     args_list = collect(args_iter)
-
+    exc_opts = Base.JLOptions()
+    color_opt = "no"
+    if exc_opts.color == 1
+        color_opt = "yes"
+    end
     if num_add_workers != 0
         if IN_SLURM
             # assume started fresh julia instance...
-            pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
+            pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])); exeflags=["--project=$(project)", "--color=$(color_opt)"])
             print("\n")
         else
             println(num_workers, " ", nworkers())
             if nworkers() == 1
-                pids = addprocs(num_workers;exeflags=["--project=$(project)", "--color=yes"])
+                pids = addprocs(num_workers; exeflags=["--project=$(project)", "--color=$(color_opt)"])
             elseif nworkers() < num_workers
-                pids = addprocs((num_workers) - nworkers();exeflags=["--project=$(project)", "--color=yes"])
+                pids = addprocs((num_workers) - nworkers(); exeflags=["--project=$(project)", "--color=$(color_opt)"])
             else
                 pids = procs()
             end

@@ -83,7 +83,7 @@ end
 
 import Base.-
 """
--(l::Dict{K,T}, r::Dict{K,T}) where {K, T}
+    -(l::Dict{K,T}, r::Dict{K,T}) where {K, T}
 
 Get the difference between two dictionaries. Helper function for diff
 """

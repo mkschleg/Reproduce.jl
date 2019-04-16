@@ -2,8 +2,6 @@
 [![Build Status](https://travis-ci.com/mkschleg/Reproduce.jl.svg?branch=develop)](https://travis-ci.com/mkschleg/Reproduce.jl)
 [![codecov](https://codecov.io/gh/mkschleg/Reproduce.jl/branch/develop/graph/badge.svg)](https://codecov.io/gh/mkschleg/Reproduce.jl)
 
-
-
 How did I get these results?
 
 A framework for managing hyper-parameter settings, and running experiments. Lightly based on litetracer from Borealis.
@@ -24,9 +22,10 @@ The goal is to make a convenient framework for data analysis for experiments in 
 ## TODOs
 
 - [ ] Docs
-- [ ] Data management and Plotting utilities
+- [x] Data searching (Mostly done. Could probably use more testing...)
+- [ ] Plotting utilities (Up Next!)
 - [ ] Frontend for visualizing data.
-- [ ] Testing with slurm backend.
-- [ ] More examples.
+- [x] Testing with slurm backend. (Make sure your experiments run *BEFORE* a job is scheduled.)
+- [ ] More examples. (maybeeee.....)
 
 HELP WANTED! Contact me via issues panel, or setup a PR.
