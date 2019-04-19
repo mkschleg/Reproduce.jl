@@ -247,7 +247,7 @@ function slurm_parallel_job(experiment_file::AbstractString,
                             extra_args=[],
                             store_exceptions=true,
                             exception_dir="except", verbose=false)
-
+    println("SLURM PARALLEL JOB")
     num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
     pids = Array{Int64, 1}
 
