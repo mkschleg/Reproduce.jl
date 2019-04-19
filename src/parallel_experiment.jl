@@ -111,10 +111,13 @@ function parallel_job(experiment_file::AbstractString,
                       store_exceptions=true,
                       exception_dir="except", verbose=false)
 
+    #######
+    #
+    # Preamble - Add processes, initialized shared memory
+    #
+    ######
+
     num_add_workers = num_workers - 1
-    if IN_SLURM
-       num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
-    end
     pids = Array{Int64, 1}
 
     args_list = collect(args_iter)
@@ -124,21 +127,13 @@ function parallel_job(experiment_file::AbstractString,
         color_opt = "yes"
     end
     if num_add_workers != 0
-        if IN_SLURM
-            # assume started fresh julia instance...
-	    println("Adding Slurm Jobs!!!")
-	    #pids = addprocs(SlurmManager(num_add_workers))
-            pids = addprocs(SlurmManager(num_add_workers); exeflags=["--project=$(project)", "--color=$(color_opt)"])
-            print("\n")
+        println(num_workers, " ", nworkers())
+        if nworkers() == 1
+            pids = addprocs(num_workers; exeflags=["--project=$(project)", "--color=$(color_opt)"])
+        elseif nworkers() < num_workers
+            pids = addprocs((num_workers) - nworkers(); exeflags=["--project=$(project)", "--color=$(color_opt)"])
         else
-            println(num_workers, " ", nworkers())
-            if nworkers() == 1
-                pids = addprocs(num_workers; exeflags=["--project=$(project)", "--color=$(color_opt)"])
-            elseif nworkers() < num_workers
-                pids = addprocs((num_workers) - nworkers(); exeflags=["--project=$(project)", "--color=$(color_opt)"])
-            else
-                pids = procs()
-            end
+            pids = procs()
         end
     end
 
@@ -147,7 +142,12 @@ function parallel_job(experiment_file::AbstractString,
     n = length(args_iter)
     job_ids = SharedArray{Int64, 1}(n)
     finished_jobs = SharedArray(fill(false, n))
-    
+
+    #########
+    #
+    # Meaty middle: Compiling code, running jobs, managing which jobs fail.
+    #
+    ########
 
     try
 
@@ -166,8 +166,6 @@ function parallel_job(experiment_file::AbstractString,
             eval(:(using Reproduce))
             eval(:(using Distributed))
             eval(:(using SharedArrays))
-            # eval(:(using ProgressMeter))
-            # println(extra_args)
             include(exp_file)
             @info "$(exp_file) included on process $(myid())"
             mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
@@ -186,7 +184,6 @@ function parallel_job(experiment_file::AbstractString,
         @sync begin
 
             @async begin
-                # println("Begin progress")
                 i = 0
                 while i < n
                     while isready(channel)
@@ -198,7 +195,6 @@ function parallel_job(experiment_file::AbstractString,
                 end
             end
 
-            # @async begin
             @async @sync for (job_id, args) in args_list @spawn begin
                 try
                     if expand_args
@@ -230,8 +226,13 @@ function parallel_job(experiment_file::AbstractString,
     catch ex
         println(ex)
         Distributed.interrupt()
-        # return findall((x)->x==false, finished_jobs)
     end
+
+    ########
+    #
+    # Finished. Return which jobs were unsuccessful.
+    #
+    ########
 
     return findall((x)->x==false, finished_jobs)
 
@@ -247,6 +248,13 @@ function slurm_parallel_job(experiment_file::AbstractString,
                             extra_args=[],
                             store_exceptions=true,
                             exception_dir="except", verbose=false)
+
+    #######
+    #
+    # Preamble - Add processes, initialized shared memory
+    #
+    ######
+
     println("SLURM PARALLEL JOB")
     num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
     pids = Array{Int64, 1}
@@ -267,6 +275,13 @@ function slurm_parallel_job(experiment_file::AbstractString,
     println(nworkers(), " ", pids)
     n = length(args_iter)
 
+    #########
+    #
+    # Meaty middle: Compiling code, running jobs, managing which jobs fail.
+    #
+    ########
+
+
     try
 
         p = Progress(length(args_iter))
@@ -285,8 +300,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
             eval(:(using Reproduce))
             eval(:(using Distributed))
             eval(:(using SharedArrays))
-            # eval(:(using ProgressMeter))
-            # println(extra_args)
             include(exp_file)
             @info "$(exp_file) included on process $(myid())"
             mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
@@ -316,7 +329,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
                 end
             end
 
-            # @async begin
             @async @sync for (job_id, args) in args_list @spawn begin
                 try
                     if expand_args
@@ -324,7 +336,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
                     else
                         Main.exp_func(args, extra_args...)
                     end
-                    # finished_jobs[job_id] = true
                     Distributed.put!(finished_jobs, job_id)
                 catch ex
                     if isa(ex, InterruptException)
@@ -347,8 +358,14 @@ function slurm_parallel_job(experiment_file::AbstractString,
     catch ex
         println(ex)
         Distributed.interrupt()
-        # return findall((x)->x==false, finished_jobs)
     end
+
+    #########
+    #
+    # Finished: get from channel which jobs succeeded.
+    #
+    ########
+
     finished_jobs_bool = fill(false, n)
     while isready(finished_jobs)
         job_id = take!(finished_jobs)
