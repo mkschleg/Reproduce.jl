@@ -102,6 +102,9 @@ function parallel_job(experiment_file::AbstractString,
                       exception_dir="except", verbose=false)
 
     num_add_workers = num_workers - 1
+    if IN_SLURM
+       num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
+    end	
     pids = Array{Int64, 1}
 
     args_list = collect(args_iter)
@@ -113,7 +116,9 @@ function parallel_job(experiment_file::AbstractString,
     if num_add_workers != 0
         if IN_SLURM
             # assume started fresh julia instance...
-            pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])); exeflags=["--project=$(project)", "--color=$(color_opt)"])
+	    println("Adding Slurm Jobs!!!")
+	    #pids = addprocs(SlurmManager(num_add_workers))
+            pids = addprocs(SlurmManager(num_add_workers); exeflags=["--project=$(project)", "--color=$(color_opt)"])
             print("\n")
         else
             println(num_workers, " ", nworkers())
