@@ -35,14 +35,24 @@ function job(experiment_file::AbstractString,
                        store_exceptions=store_exceptions,
                        exception_dir=exception_dir)
     else
-        @time parallel_job(experiment_file, exp_dir, args_iter;
-                           exp_module_name=exp_module_name,
-                           exp_func_name=exp_func_name,
-                           num_workers=num_workers,
-                           expand_args=expand_args,
-                           extra_args=extra_args,
-                           store_exceptions=store_exceptions,
-                           exception_dir=exception_dir)
+        if IN_SLURM
+            @time slurm_parallel_job(experiment_file, exp_dir, args_iter;
+                                     exp_module_name=exp_module_name,
+                                     exp_func_name=exp_func_name,
+                                     expand_args=expand_args,
+                                     extra_args=extra_args,
+                                     store_exceptions=store_exceptions,
+                                     exception_dir=exception_dir)
+        else
+            @time parallel_job(experiment_file, exp_dir, args_iter;
+                               exp_module_name=exp_module_name,
+                               exp_func_name=exp_func_name,
+                               num_workers=num_workers,
+                               expand_args=expand_args,
+                               extra_args=extra_args,
+                               store_exceptions=store_exceptions,
+                               exception_dir=exception_dir)
+        end
     end
 
 end
@@ -255,10 +265,7 @@ function slurm_parallel_job(experiment_file::AbstractString,
     end
 
     println(nworkers(), " ", pids)
-
     n = length(args_iter)
-    # job_ids = SharedArray{Int64, 1}(n)
-    # finished_jobs = SharedArray(fill(false, n))
 
     try
 
@@ -298,7 +305,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
         @sync begin
 
             @async begin
-                # println("Begin progress")
                 i = 0
                 while i < n
                     while isready(channel)
