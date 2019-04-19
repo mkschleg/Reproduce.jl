@@ -1,6 +1,6 @@
 name = "Reproduce"
 uuid = "560a9c3a-0b8c-11e9-0329-d39dfcb85ed2"
-authors = ["Matt <mkschleg@umail.iu.edu>"]
+authors = ["Matt <mkschleg@gmail.com>"]
 version = "0.2.1"
 
 [deps]
