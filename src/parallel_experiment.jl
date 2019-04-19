@@ -104,7 +104,7 @@ function parallel_job(experiment_file::AbstractString,
     num_add_workers = num_workers - 1
     if IN_SLURM
        num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
-    end	
+    end
     pids = Array{Int64, 1}
 
     args_list = collect(args_iter)
@@ -226,6 +226,133 @@ function parallel_job(experiment_file::AbstractString,
     return findall((x)->x==false, finished_jobs)
 
 end
+
+function slurm_parallel_job(experiment_file::AbstractString,
+                            exp_dir::AbstractString,
+                            args_iter;
+                            exp_module_name::Union{String, Symbol}=:Main,
+                            exp_func_name::Union{String, Symbol}=:main_experiment,
+                            expand_args=false,
+                            project=".",
+                            extra_args=[],
+                            store_exceptions=true,
+                            exception_dir="except", verbose=false)
+
+    num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
+    pids = Array{Int64, 1}
+
+    args_list = collect(args_iter)
+    exc_opts = Base.JLOptions()
+    color_opt = "no"
+    if exc_opts.color == 1
+        color_opt = "yes"
+    end
+    if num_add_workers != 0
+        # assume started fresh julia instance...
+	      println("Adding Slurm Jobs!!!")
+        pids = addprocs(SlurmManager(num_add_workers); exeflags=["--project=$(project)", "--color=$(color_opt)"])
+        print("\n")
+    end
+
+    println(nworkers(), " ", pids)
+
+    n = length(args_iter)
+    # job_ids = SharedArray{Int64, 1}(n)
+    # finished_jobs = SharedArray(fill(false, n))
+
+    try
+
+        p = Progress(length(args_iter))
+        channel = RemoteChannel(()->Channel{Bool}(length(args_iter)), 1)
+        finished_jobs = RemoteChannel(()->Channel{Int}(n), 1)
+
+        mod_str = string(exp_module_name)
+        func_str = string(exp_func_name)
+        @everywhere const global exp_file=$experiment_file
+        @everywhere const global expand_args=$expand_args
+        @everywhere const global extra_args=$extra_args
+        @everywhere const global store_exceptions=$store_exceptions
+        @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
+
+        @everywhere begin
+            eval(:(using Reproduce))
+            eval(:(using Distributed))
+            eval(:(using SharedArrays))
+            # eval(:(using ProgressMeter))
+            # println(extra_args)
+            include(exp_file)
+            @info "$(exp_file) included on process $(myid())"
+            mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
+            const global exp_func = getfield(mod, Symbol($func_str))
+            experiment(args) = exp_func(args)
+            @info "Experiment built on process $(myid())"
+
+        end
+
+        @info "Number of Jobs: $(n)"
+        exception_loc = joinpath(exp_dir, exception_dir)
+        if store_exceptions && !isdir(exception_loc)
+            mkpath(exception_loc)
+        end
+
+        @sync begin
+
+            @async begin
+                # println("Begin progress")
+                i = 0
+                while i < n
+                    while isready(channel)
+                        v = take!(channel)
+                        ProgressMeter.next!(p)
+                        i += 1
+                    end
+                    yield()
+                end
+            end
+
+            # @async begin
+            @async @sync for (job_id, args) in args_list @spawn begin
+                try
+                    if expand_args
+                        Main.exp_func(args..., extra_args...)
+                    else
+                        Main.exp_func(args, extra_args...)
+                    end
+                    # finished_jobs[job_id] = true
+                    Distributed.put!(finished_jobs, job_id)
+                catch ex
+                    if isa(ex, InterruptException)
+                        throw(InterruptException())
+                    end
+                    if verbose
+                        @warn "Exception encountered for job: $(job_id)"
+                    end
+                    if store_exceptions
+                        exception_file(
+                            joinpath(exception_loc, "job_$(job_id).exc"),
+                            job_id, ex, stacktrace(catch_backtrace()))
+                    end
+                end
+                Distributed.put!(channel, true)
+            end
+            end
+        end
+
+    catch ex
+        println(ex)
+        Distributed.interrupt()
+        # return findall((x)->x==false, finished_jobs)
+    end
+    finished_jobs_bool = fill(false, n)
+    while isready(finished_jobs)
+        job_id = take!(finished_jobs)
+        finished_jobs_bool[job_id] = true
+    end
+    return findall((x)->x==false, finished_jobs_bool)
+end
+
+
+
 
 function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
                   args_iter, task_id::Integer;
