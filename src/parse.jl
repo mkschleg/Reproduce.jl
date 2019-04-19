@@ -35,7 +35,7 @@ function create_info!(parsed_args::Dict,
     unused_keys = KEY_TYPE.(filter_keys)
     hash_args = filter(k->(!(k[1] in unused_keys)), parsed_args)
     used_keys=keys(hash_args)
-    
+
     hash_key = KEY_TYPE(HASH_KEY)
     save_name_key = KEY_TYPE(SAVE_NAME_KEY)
     git_info_key = KEY_TYPE(GIT_INFO_KEY)
