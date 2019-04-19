@@ -1,3 +1,15 @@
+#!/home/mkschleg/opt/bin/julia
+#SBATCH -o test_err.out # Standard output
+#SBATCH -e test_out.err # Standard error
+#SBATCH --mem-per-cpu=1000M # Memory request of 1 GB
+#SBATCH --time=01:00:00 # Running time of 10 minutes
+#SBATCH --ntasks=10
+#SBATCH --cpus-per-task=1
+#SBATCH --account=def-whitem
+
+using Pkg
+Pkg.activate(".")
+
 using Reproduce
 
 const save_loc = "test_exp"
