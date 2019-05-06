@@ -281,12 +281,12 @@ function slurm_parallel_job(experiment_file::AbstractString,
     #
     ########
 
+    finished_jobs = RemoteChannel(()->Channel{Int}(n), 1)
 
     try
 
         p = Progress(length(args_iter))
         channel = RemoteChannel(()->Channel{Bool}(length(args_iter)), 1)
-        finished_jobs = RemoteChannel(()->Channel{Int}(n), 1)
 
         mod_str = string(exp_module_name)
         func_str = string(exp_func_name)
