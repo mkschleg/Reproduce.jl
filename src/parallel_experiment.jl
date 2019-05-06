@@ -178,6 +178,7 @@ function parallel_job(experiment_file::AbstractString,
                         v = take!(channel)
                         ProgressMeter.next!(p)
                         i += 1
+                        flush(p.output)
                     end
                     yield()
                 end

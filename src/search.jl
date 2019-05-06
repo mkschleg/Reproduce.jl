@@ -48,9 +48,7 @@ end
 
 Search for specific entries, or a number of entries.
 """
-function search(dir::AbstractString, search_dict; settings_file="settings.jld2")
-
-    itemCollection = ItemCollection(dir; settings_file=settings_file)
+function search(itemCollection::ItemCollection, search_dict)
 
     dict_keys = keys(search_dict)
     found_items = Array{Item, 1}()
@@ -67,19 +65,26 @@ function search(dir::AbstractString, search_dict; settings_file="settings.jld2")
 
 end
 
+search(dir::AbstractString, search_dict; settings_file="settings.jld2") =
+    search(ItemCollection(dir), search_dict; settings_file=settings_file)
+
 """
     details
 
 get details of the pointed directory
 """
-function details(dir::AbstractString; settings_file="settings.jld2")
-    itemCollection = ItemCollection(dir; settings_file=settings_file)
+function details(itemCollection::ItemCollection)
+    # itemCollection = ItemCollection(dir; settings_file=settings_file)
 
     for item in itemCollection.items
         args = ["$(k):$(item.parsed_args[k])" for k in item.hash_keys]
         println(item.parsed_args["_SAVE"], " ", join(args, " "))
     end
 end
+
+details(dir::AbstractString; settings_file="settings.jld2") =
+    details(ItemCollection(dir; settings_file=settings_file))
+
 
 import Base.-
 """
@@ -133,7 +138,9 @@ function Base.diff(items::Array{Reproduce.Item, 1};
     return diff_parsed
 end
 
+Base.diff(itemCollection::ItemCollection; kwargs...) =
+    Base.diff(itemCollection.items; kwargs...)
 
-
-
+Base.diff(base_dir::AbstractString; settings_file="settings.jld2", kwargs...) =
+    Base.diff(ItemCollection(base_dir; settings_file=settings_file); kwargs...)
 
