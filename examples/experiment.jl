@@ -27,9 +27,9 @@ function main_experiment(args::Vector{String}, saveloc::String="default_save_loc
         throw("Oh No!!!")
     end
     # sleep(0.1*(parsed["opt1"]^4))
-    for i in 1:parsed["opt1"]^3
-        j += i
-    end
+#    for i in 1:parsed["opt1"]^3
+#        j += i
+#    end
     @save joinpath(parsed["_SAVE"], "data.jld2") args
 
     return j
