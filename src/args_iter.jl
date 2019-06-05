@@ -21,9 +21,13 @@ function make_arguments(iter::ArgIterator, state)
         end
         arg_list = [new_ret_list; iter.stable_arg]
     else
-        d = Dict{String, String}()
+        d = Dict{String, Union{String, Tuple}}()
         for (arg_idx, arg) in enumerate(iter.arg_list)
-            d[arg] = string(iter.dict[arg][state[2][arg_idx]])
+            if iter.dict[arg][state[2][arg_idx]] <: Tuple
+                d[arg] = string.(iter.dict[arg][state[2][arg_idx]])
+            else
+                d[arg] = string(iter.dict[arg][state[2][arg_idx]])
+            end
         end
         arg_list = [iter.make_args(d); iter.stable_arg]
     end
