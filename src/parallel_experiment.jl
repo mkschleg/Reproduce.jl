@@ -6,8 +6,9 @@ using JLD2
 using Dates
 
 const IN_SLURM = "SLURM_JOBID" in keys(ENV)
-IN_SLURM && using ClusterManagers
+IN_SLURM && include("slurm.jl")
 
+using Main.ClusterManager
 
 """
 job
@@ -23,7 +24,8 @@ function job(experiment_file::AbstractString,
              expand_args::Bool=false,
              extra_args = [],
              store_exceptions=true,
-             exception_dir="except")
+             exception_dir="except",
+             job_file_dir=".")
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
@@ -42,7 +44,8 @@ function job(experiment_file::AbstractString,
                                      expand_args=expand_args,
                                      extra_args=extra_args,
                                      store_exceptions=store_exceptions,
-                                     exception_dir=exception_dir)
+                                     exception_dir=exception_dir,
+                                     job_file_dir=job_file_dir)
         else
             @time parallel_job(experiment_file, exp_dir, args_iter;
                                exp_module_name=exp_module_name,
@@ -185,13 +188,10 @@ function parallel_job(experiment_file::AbstractString,
 
             @async begin
                 i = 0
-                while i < n
-                    while isready(channel)
-                        v = take!(channel)
-                        ProgressMeter.next!(p)
-                        i += 1
-                        flush(p.output)
-                    end
+                while i < n && take!(channel)
+                    ProgressMeter.next!(p)
+                    i += 1
+                    flush(p.output)
                     yield()
                 end
             end
@@ -248,7 +248,7 @@ function slurm_parallel_job(experiment_file::AbstractString,
                             project=".",
                             extra_args=[],
                             store_exceptions=true,
-                            exception_dir="except", verbose=false)
+                            exception_dir="except", verbose=false, job_file_dir=".")
 
     #######
     #
@@ -269,7 +269,7 @@ function slurm_parallel_job(experiment_file::AbstractString,
     if num_add_workers != 0
         # assume started fresh julia instance...
 	      println("Adding Slurm Jobs!!!")
-        pids = addprocs(SlurmManager(num_add_workers); exeflags=["--project=$(project)", "--color=$(color_opt)"])
+        pids = addprocs(SlurmManager(num_add_workers); exeflags=["--project=$(project)", "--color=$(color_opt)"], job_file_loc=job_file_dir)
         print("\n")
     end
 
@@ -320,12 +320,11 @@ function slurm_parallel_job(experiment_file::AbstractString,
 
             @async begin
                 i = 0
-                while i < n
-                    while isready(channel)
-                        v = take!(channel)
-                        ProgressMeter.next!(p)
-                        i += 1
-                    end
+                while i < n && take!(channel)
+
+                    ProgressMeter.next!(p)
+                    i += 1
+                    flush(p.output)
                     yield()
                 end
             end
