@@ -7,8 +7,7 @@ using Dates
 
 const IN_SLURM = "SLURM_JOBID" in keys(ENV)
 IN_SLURM && include("slurm.jl")
-
-using Main.ClusterManager
+IN_SLURM && using .ClusterManagers
 
 """
 job
