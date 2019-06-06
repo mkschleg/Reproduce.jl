@@ -23,7 +23,7 @@ function make_arguments(iter::ArgIterator, state)
     else
         d = Dict{String, Union{String, Tuple}}()
         for (arg_idx, arg) in enumerate(iter.arg_list)
-            if iter.dict[arg][state[2][arg_idx]] <: Tuple
+            if typeof(iter.dict[arg][state[2][arg_idx]]) <: Tuple
                 d[arg] = string.(iter.dict[arg][state[2][arg_idx]])
             else
                 d[arg] = string(iter.dict[arg][state[2][arg_idx]])
