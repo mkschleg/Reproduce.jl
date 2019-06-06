@@ -5,7 +5,7 @@ using SharedArrays
 using JLD2
 using Dates
 
-const IN_SLURM = "SLURM_JOBID" in keys(ENV)
+IN_SLURM = "SLURM_JOBID" in keys(ENV)
 IN_SLURM && include("slurm.jl")
 IN_SLURM && using .ClusterManagers
 
