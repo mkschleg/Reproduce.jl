@@ -17,7 +17,7 @@ const exp_file = "examples/experiment.jl"
 const exp_module_name = :Main
 const exp_func_name = :main_experiment
 
-function make_arguments(args::Dict{String, String})
+function make_arguments(args::Dict)
     new_args = ["--opt1", args["opt1"], "--opt2", args["opt2"]]
     return new_args
 end

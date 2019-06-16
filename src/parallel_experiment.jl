@@ -158,23 +158,28 @@ function parallel_job(experiment_file::AbstractString,
 
         mod_str = string(exp_module_name)
         func_str = string(exp_func_name)
-        @everywhere const global exp_file=$experiment_file
-        @everywhere const global expand_args=$expand_args
-        @everywhere const global extra_args=$extra_args
-        @everywhere const global store_exceptions=$store_exceptions
-        @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
 
-        @everywhere begin
-            eval(:(using Reproduce))
-            eval(:(using Distributed))
-            eval(:(using SharedArrays))
-            include(exp_file)
-            @info "$(exp_file) included on process $(myid())"
-            mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
-            const global exp_func = getfield(mod, Symbol($func_str))
-            experiment(args) = exp_func(args)
-            @info "Experiment built on process $(myid())"
+        try
+            @everywhere const global exp_file=$experiment_file
+            @everywhere const global expand_args=$expand_args
+            @everywhere const global extra_args=$extra_args
+            @everywhere const global store_exceptions=$store_exceptions
+            @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
 
+            @everywhere begin
+                eval(:(using Reproduce))
+                eval(:(using Distributed))
+                eval(:(using SharedArrays))
+                include(exp_file)
+                @info "$(exp_file) included on process $(myid())"
+                mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
+                const global exp_func = getfield(mod, Symbol($func_str))
+                experiment(args) = exp_func(args)
+                @info "Experiment built on process $(myid())"
+                Distributed.myid() == 4 ? throw("Test Error $(myid())!") : 1+1
+            end
+        catch ex
+            println(ex)
         end
 
         @info "Number of Jobs: $(n)"
@@ -290,23 +295,27 @@ function slurm_parallel_job(experiment_file::AbstractString,
 
         mod_str = string(exp_module_name)
         func_str = string(exp_func_name)
-        @everywhere const global exp_file=$experiment_file
-        @everywhere const global expand_args=$expand_args
-        @everywhere const global extra_args=$extra_args
-        @everywhere const global store_exceptions=$store_exceptions
-        @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
+        try
+            @everywhere const global exp_file=$experiment_file
+            @everywhere const global expand_args=$expand_args
+            @everywhere const global extra_args=$extra_args
+            @everywhere const global store_exceptions=$store_exceptions
+            @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
 
-        @everywhere begin
-            eval(:(using Reproduce))
-            eval(:(using Distributed))
-            eval(:(using SharedArrays))
-            include(exp_file)
-            @info "$(exp_file) included on process $(myid())"
-            mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
-            const global exp_func = getfield(mod, Symbol($func_str))
-            experiment(args) = exp_func(args)
-            @info "Experiment built on process $(myid())"
+            @everywhere begin
+                eval(:(using Reproduce))
+                eval(:(using Distributed))
+                eval(:(using SharedArrays))
+                include(exp_file)
+                @info "$(exp_file) included on process $(myid())"
+                mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
+                const global exp_func = getfield(mod, Symbol($func_str))
+                experiment(args) = exp_func(args)
+                @info "Experiment built on process $(myid())"
 
+            end
+        catch ex
+            println(ex)
         end
 
         @info "Number of Jobs: $(n)"
