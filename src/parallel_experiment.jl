@@ -312,7 +312,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
                 const global exp_func = getfield(mod, Symbol($func_str))
                 experiment(args) = exp_func(args)
                 @info "Experiment built on process $(myid())"
-
             end
         catch ex
             println(ex)
