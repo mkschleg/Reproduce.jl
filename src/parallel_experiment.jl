@@ -176,7 +176,6 @@ function parallel_job(experiment_file::AbstractString,
                 const global exp_func = getfield(mod, Symbol($func_str))
                 experiment(args) = exp_func(args)
                 @info "Experiment built on process $(myid())"
-                Distributed.myid() == 4 ? throw("Test Error $(myid())!") : 1+1
             end
         catch ex
             println(ex)
