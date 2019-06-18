@@ -153,7 +153,6 @@ function parallel_job(experiment_file::AbstractString,
 
     try
 
-        p = Progress(length(args_iter))
         channel = RemoteChannel(()->Channel{Bool}(length(args_iter)), 1)
 
         mod_str = string(exp_module_name)
@@ -187,44 +186,29 @@ function parallel_job(experiment_file::AbstractString,
             mkpath(exception_loc)
         end
 
-        @sync begin
-
-            @async begin
-                i = 0
-                while i < n && take!(channel)
-                    ProgressMeter.next!(p)
-                    i += 1
-                    flush(p.output)
-                    yield()
+        ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
+            try
+                if expand_args
+                    Main.exp_func(args..., extra_args...)
+                else
+                    Main.exp_func(args, extra_args...)
+                end
+                finished_jobs[job_id] = true
+            catch ex
+                if isa(ex, InterruptException)
+                    throw(InterruptException())
+                end
+                if verbose
+                    @warn "Exception encountered for job: $(job_id)"
+                end
+                if store_exceptions
+                    exception_file(
+                        joinpath(exception_loc, "job_$(job_id).exc"),
+                        job_id, ex, stacktrace(catch_backtrace()))
                 end
             end
-
-            @async @sync for (job_id, args) in args_list @spawn begin
-                try
-                    if expand_args
-                        Main.exp_func(args..., extra_args...)
-                    else
-                        Main.exp_func(args, extra_args...)
-                    end
-                    finished_jobs[job_id] = true
-                catch ex
-                    if isa(ex, InterruptException)
-                        throw(InterruptException())
-                    end
-                    if verbose
-                        @warn "Exception encountered for job: $(job_id)"
-                    end
-                    if store_exceptions
-                        exception_file(
-                            joinpath(exception_loc, "job_$(job_id).exc"),
-                            job_id, ex, stacktrace(catch_backtrace()))
-                    end
-                end
-                Distributed.put!(channel, true)
-                job_ids[job_id] = myid()
-            end
-            end
-
+            Distributed.put!(channel, true)
+            job_ids[job_id] = myid()
         end
 
     catch ex
@@ -237,6 +221,8 @@ function parallel_job(experiment_file::AbstractString,
     # Finished. Return which jobs were unsuccessful.
     #
     ########
+
+    println(job_ids)
 
     return findall((x)->x==false, finished_jobs)
 
@@ -288,7 +274,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
 
     try
 
-        p = Progress(length(args_iter))
         channel = RemoteChannel(()->Channel{Bool}(length(args_iter)), 1)
         finished_jobs = RemoteChannel(()->Channel{Int}(n), 1)
 
@@ -322,43 +307,29 @@ function slurm_parallel_job(experiment_file::AbstractString,
             mkpath(exception_loc)
         end
 
-        @sync begin
-
-            @async begin
-                i = 0
-                while i < n && take!(channel)
-
-                    ProgressMeter.next!(p)
-                    i += 1
-                    flush(p.output)
-                    yield()
+        ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
+            try
+                if expand_args
+                    Main.exp_func(args..., extra_args...)
+                else
+                    Main.exp_func(args, extra_args...)
+                end
+                finished_jobs[job_id] = true
+            catch ex
+                if isa(ex, InterruptException)
+                    throw(InterruptException())
+                end
+                if verbose
+                    @warn "Exception encountered for job: $(job_id)"
+                end
+                if store_exceptions
+                    exception_file(
+                        joinpath(exception_loc, "job_$(job_id).exc"),
+                        job_id, ex, stacktrace(catch_backtrace()))
                 end
             end
-
-            @async @sync for (job_id, args) in args_list @spawn begin
-                try
-                    if expand_args
-                        Main.exp_func(args..., extra_args...)
-                    else
-                        Main.exp_func(args, extra_args...)
-                    end
-                    Distributed.put!(finished_jobs, job_id)
-                catch ex
-                    if isa(ex, InterruptException)
-                        throw(InterruptException())
-                    end
-                    if verbose
-                        @warn "Exception encountered for job: $(job_id)"
-                    end
-                    if store_exceptions
-                        exception_file(
-                            joinpath(exception_loc, "job_$(job_id).exc"),
-                            job_id, ex, stacktrace(catch_backtrace()))
-                    end
-                end
-                Distributed.put!(channel, true)
-            end
-            end
+            Distributed.put!(channel, true)
+            job_ids[job_id] = myid()
         end
 
     catch ex
