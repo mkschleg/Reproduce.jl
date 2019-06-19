@@ -193,7 +193,7 @@ function parallel_job(experiment_file::AbstractString,
                 else
                     Main.exp_func(args, extra_args...)
                 end
-                Distributed.put!(finished_jobs, job_id)
+                finished_jobs[job_id] = true
             catch ex
                 if isa(ex, InterruptException)
                     throw(InterruptException())
@@ -208,6 +208,7 @@ function parallel_job(experiment_file::AbstractString,
                 end
             end
             Distributed.put!(channel, true)
+            job_ids[job_id] = myid()
         end
 
     catch ex
@@ -313,7 +314,7 @@ function slurm_parallel_job(experiment_file::AbstractString,
                 else
                     Main.exp_func(args, extra_args...)
                 end
-                finished_jobs[job_id] = true
+                Distributed.put!(finished_jobs, job_id)
             catch ex
                 if isa(ex, InterruptException)
                     throw(InterruptException())
@@ -328,7 +329,6 @@ function slurm_parallel_job(experiment_file::AbstractString,
                 end
             end
             Distributed.put!(channel, true)
-            job_ids[job_id] = myid()
         end
 
     catch ex
