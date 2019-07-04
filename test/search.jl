@@ -64,6 +64,11 @@ function search_test()
     return all(tests) && length(hash_codes) == 5
 end
 
+function diff_test()
+    ic = ItemCollection(TEST_DIR)
+    diff_dict = diff(ic)
+end
+
 macro testsearch()
     @testset "Search Tests" begin
         setup_tests()
