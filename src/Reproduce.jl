@@ -1,8 +1,6 @@
 
 module Reproduce
 
-
-
 export
     create_info!,
     create_info,
@@ -25,7 +23,5 @@ include("exp_utils.jl")
 export job
 include("parallel_experiment.jl")
 # greeting() = println("Hello World!")
-
-
 
 end # module
