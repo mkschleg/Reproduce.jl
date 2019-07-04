@@ -1,4 +1,4 @@
-module ARGSITER_TEST
+module ARGSITER_TESTS
 
 using Reproduce, Test, Git, FileIO
 
@@ -47,10 +47,10 @@ function test_func_1()
 end
 
 
-macro test_args_iter()
-    @testset "Search Tests" begin
+macro tests()
+    @testset "ArgIterator Tests" begin
         setup_tests()
-        test_func_1()
+        @test test_func_1() == true
         reset_tests()
     end
 end

@@ -9,7 +9,7 @@ function tests()
 
     PARSE_TESTS.@testparse
     SEARCH_TESTS.@testsearch
-
+    ARGSITER_TESTS.@tests
 end
 
 tests()
