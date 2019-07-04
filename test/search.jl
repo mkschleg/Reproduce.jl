@@ -67,6 +67,7 @@ end
 function diff_test()
     ic = ItemCollection(TEST_DIR)
     diff_dict = diff(ic)
+    return diff_dict["a"] == [1,2,3,4,5] && diff_dict["b"] == [1,2,3,4,5]
 end
 
 macro testsearch()
@@ -74,6 +75,7 @@ macro testsearch()
         setup_tests()
         @test item_collection_test() == true
         @test search_test() == true
+        @test diff_test() == true
         reset_tests()
     end
 end
