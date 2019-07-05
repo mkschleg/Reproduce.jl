@@ -24,7 +24,9 @@ end
 
 
 function create_experiment_dir(exp_dir::String;
-                               org_file=true, replace=false)
+                               org_file=true,
+                               replace=false,
+                               tldr="")
 
     if isdir(exp_dir)
         if !replace
@@ -49,9 +51,10 @@ function create_experiment_dir(exp_dir::String;
         end
     end
 
-    f = open(joinpath(exp_dir, "notes.org"), "w")
-    write(f, "#+title: Experimental Notes for $(exp_dir)\n\n\n")
-    close(f)
+    open(joinpath(exp_dir, "notes.org"), "w") do f
+        write(f, "#+title: Experimental Notes for $(exp_dir)\n\n")
+        write(f, tldr*"\n\n")
+    end
 
     return
 end
