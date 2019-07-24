@@ -64,11 +64,18 @@ function search_test()
     return all(tests) && length(hash_codes) == 5
 end
 
+function diff_test()
+    ic = ItemCollection(TEST_DIR)
+    diff_dict = diff(ic)
+    return diff_dict["a"] == [1,2,3,4,5] && diff_dict["b"] == [1,2,3,4,5]
+end
+
 macro testsearch()
     @testset "Search Tests" begin
         setup_tests()
         @test item_collection_test() == true
         @test search_test() == true
+        @test diff_test() == true
         reset_tests()
     end
 end
