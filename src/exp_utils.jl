@@ -125,10 +125,9 @@ function add_experiment(exp_dir::AbstractString,
         write(f, exp_str)
     end
 
-    FileIO.save(settings_file,
-                Dict{String, Any}(
-                    "args_iter"=>args_iter,
-                    "make_args_str"=>make_args_str))
+    @save settings_file Dict{String, Any}(
+        "args_iter"=>args_iter,
+        "make_args_str"=>make_args_str)
 
 end
 
