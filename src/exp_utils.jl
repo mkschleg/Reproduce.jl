@@ -53,7 +53,7 @@ function create_experiment_dir(exp_dir::String;
 
     open(joinpath(exp_dir, "notes.org"), "w") do f
         write(f, "#+title: Experimental Notes for $(exp_dir)\n\n")
-        write(f, tldr*"\n\n")
+        write(f, "TL;DR: $(tldr)\n\n")
     end
 
     return
