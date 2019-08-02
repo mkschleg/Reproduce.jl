@@ -5,9 +5,15 @@ using SharedArrays
 using JLD2
 using Dates
 
-IN_SLURM = "SLURM_JOBID" in keys(ENV)
-IN_SLURM && include("slurm.jl")
-IN_SLURM && using .ClusterManagers
+
+include("slurm.jl")
+using .ClusterManagers
+
+
+
+function IN_SLURM()
+    return "SLURM_JOBID" in keys(ENV)
+end
 
 """
 job
@@ -36,7 +42,7 @@ function job(experiment_file::AbstractString,
                        store_exceptions=store_exceptions,
                        exception_dir=exception_dir)
     else
-        if IN_SLURM
+        if IN_SLURM()
             @time slurm_parallel_job(experiment_file, exp_dir, args_iter;
                                      exp_module_name=exp_module_name,
                                      exp_func_name=exp_func_name,
