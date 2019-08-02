@@ -109,6 +109,7 @@ function add_experiment(exp_dir::AbstractString,
         make_args_str, line1 = definition(String, m)
     end
 
+    d = 
 
     open(joinpath(exp_dir, "notes.org"), "a") do f
         exp_str = "* " * date_str * "\n\n" *
@@ -119,8 +120,8 @@ function add_experiment(exp_dir::AbstractString,
             tab*"experiment function: $(string(exp_func_name))\n\n" *
             tab*"settings file: $(settings_dir)\n\n" *
             tab*"#+BEGIN_SRC julia\n" *
-            tab*"dict = $(args_iter.dict)\n" *
-            tab*"arg_list = $(args_iter.arg_list)\n" *
+            (typeof(args_iter) == ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)") *
+            (typeof(args_iter) == ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)") *
             tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
             tab*"#Make Arguments\n" *
             tab*make_args_str*"\n" *
