@@ -104,7 +104,7 @@ function add_experiment(exp_dir::AbstractString,
     tab = "\t"
 
     make_args_str = "nothing"
-    if args_iter.make_args != nothing
+    if typeof(args_iter) == ArgIterator && args_iter.make_args != nothing
         m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
         make_args_str, line1 = definition(String, m)
     end
