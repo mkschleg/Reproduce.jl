@@ -11,7 +11,7 @@ struct Experiment
     file::AbstractString
     module_name::Union{String, Symbol}
     func_name::Union{String, Symbol}
-    args_iter::ArgIterator
+    args_iter::AbstractArgIter
     hash::UInt64
     function Experiment(dir::AbstractString,
                         file::AbstractString,
