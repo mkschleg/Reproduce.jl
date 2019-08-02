@@ -1,6 +1,6 @@
 
 
-struct ArgLooper
+struct ArgLooper  <: AbstractArgIter
     dict_list::Vector{Vector{String}}
     runs_iter::AbstractArray
     stable_arg::Vector{String}

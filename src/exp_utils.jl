@@ -17,7 +17,7 @@ struct Experiment
                         file::AbstractString,
                         module_name::Union{String, Symbol},
                         func_name::Union{String, Symbol},
-                        args_iter::ArgIterator)
+                        args_iter::AbstractArgIter)
         new(dir, file, module_name, func_name, args_iter, hash(string(args_iter)))
     end
 end
@@ -70,7 +70,7 @@ function add_experiment(exp_dir::AbstractString,
                         experiment_file::AbstractString,
                         exp_module_name::AbstractString,
                         exp_func_name::AbstractString,
-                        args_iter::ArgIterator,
+                        args_iter::AbstractArgIter,
                         hash::UInt64;
                         settings_dir="", add_all_tasks=false)
 

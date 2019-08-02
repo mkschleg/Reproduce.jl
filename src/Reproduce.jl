@@ -14,6 +14,8 @@ include("parse.jl")
 export ItemCollection, search, details
 include("search.jl")
 
+abstract type AbstractArgIter end
+
 export ArgIterator, ArgLooper
 include("args_iter.jl")
 include("args_looper.jl")
