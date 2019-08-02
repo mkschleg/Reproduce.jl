@@ -11,13 +11,13 @@ struct Experiment
     file::AbstractString
     module_name::Union{String, Symbol}
     func_name::Union{String, Symbol}
-    args_iter::ArgIterator
+    args_iter::AbstractArgIter
     hash::UInt64
     function Experiment(dir::AbstractString,
                         file::AbstractString,
                         module_name::Union{String, Symbol},
                         func_name::Union{String, Symbol},
-                        args_iter::ArgIterator)
+                        args_iter::AbstractArgIter)
         new(dir, file, module_name, func_name, args_iter, hash(string(args_iter)))
     end
 end
@@ -70,7 +70,7 @@ function add_experiment(exp_dir::AbstractString,
                         experiment_file::AbstractString,
                         exp_module_name::AbstractString,
                         exp_func_name::AbstractString,
-                        args_iter::ArgIterator,
+                        args_iter::AbstractArgIter,
                         hash::UInt64;
                         settings_dir="", add_all_tasks=false)
 
@@ -104,11 +104,12 @@ function add_experiment(exp_dir::AbstractString,
     tab = "\t"
 
     make_args_str = "nothing"
-    if args_iter.make_args != nothing
+    if typeof(args_iter) == ArgIterator && args_iter.make_args != nothing
         m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
         make_args_str, line1 = definition(String, m)
     end
 
+    d = 
 
     open(joinpath(exp_dir, "notes.org"), "a") do f
         exp_str = "* " * date_str * "\n\n" *
@@ -119,8 +120,8 @@ function add_experiment(exp_dir::AbstractString,
             tab*"experiment function: $(string(exp_func_name))\n\n" *
             tab*"settings file: $(settings_dir)\n\n" *
             tab*"#+BEGIN_SRC julia\n" *
-            tab*"dict = $(args_iter.dict)\n" *
-            tab*"arg_list = $(args_iter.arg_list)\n" *
+            (typeof(args_iter) == ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
+            (typeof(args_iter) == ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
             tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
             tab*"#Make Arguments\n" *
             tab*make_args_str*"\n" *

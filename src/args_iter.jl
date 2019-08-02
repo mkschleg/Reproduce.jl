@@ -1,7 +1,7 @@
 
 
 
-struct ArgIterator
+struct ArgIterator <: AbstractArgIter
     dict::Dict
     stable_arg::Vector{String}
     arg_list::Vector{String}
