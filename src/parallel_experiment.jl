@@ -4,9 +4,12 @@ using Logging
 using SharedArrays
 using JLD2
 using Dates
-using .ClusterManagers
+
 
 include("slurm.jl")
+using .ClusterManagers
+
+
 
 function IN_SLURM()
     return "SLURM_JOBID" in keys(ENV)
