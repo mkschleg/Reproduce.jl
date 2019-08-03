@@ -39,7 +39,7 @@ function test_experiment()
                             exp_func_name,
                             args_iterator)
 
-    create_experiment_dir(experiment)
+    create_experiment_dir(experiment; tldr="hello tldr")
     add_experiment(experiment; settings_dir="settings")
     ret = job(experiment; num_workers=6, extra_args=[save_loc])
     post_experiment(experiment, ret)
