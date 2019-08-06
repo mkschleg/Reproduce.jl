@@ -61,7 +61,7 @@ end
 
 function create_experiment_dir(exp::Experiment;
                                kwargs...)
-    create_experiment_dir(exp.dir, kwargs...)
+    create_experiment_dir(exp.dir; kwargs...)
     return
 end
 
