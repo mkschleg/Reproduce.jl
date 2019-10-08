@@ -1,7 +1,7 @@
 name = "Reproduce"
 uuid = "560a9c3a-0b8c-11e9-0329-d39dfcb85ed2"
 authors = ["Matt <mkschleg@gmail.com>"]
-version = "0.3.2"
+version = "0.3.3"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
