@@ -27,7 +27,7 @@ function job(experiment_file::AbstractString,
              extra_args = [],
              store_exceptions=true,
              exception_dir="except",
-             job_file_dir=".")
+             job_file_dir="")
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
