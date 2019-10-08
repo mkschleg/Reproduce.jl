@@ -240,7 +240,7 @@ function slurm_parallel_job(experiment_file::AbstractString,
                             project=".",
                             extra_args=[],
                             store_exceptions=true,
-                            exception_dir="except", verbose=false, job_file_dir=".")
+                            exception_dir="except", verbose=false, job_file_dir="")
 
     #######
     #
@@ -261,6 +261,9 @@ function slurm_parallel_job(experiment_file::AbstractString,
     if num_add_workers != 0
         # assume started fresh julia instance...
 	println("Adding Slurm Jobs!!!")
+        if job_file_dir == ""
+            job_file_dir = joinpath(exp_dir, "jobs")
+        end
         pids = addprocs(SlurmManager(num_add_workers); exeflags=["--project=$(project)", "--color=$(color_opt)"], job_file_loc=job_file_dir)
         print("\n")
     end
