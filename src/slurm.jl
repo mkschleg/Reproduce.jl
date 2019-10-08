@@ -30,8 +30,6 @@ function launch(manager::SlurmManager, params::Dict, instances_arr::Array,
         p = filter(x->(!(x[1] in stdkeys) && x[1] != :job_file_loc), params)
 	println(p)
 
-
-
         srunargs = []
         for k in keys(p)
             if length(string(k)) == 1
