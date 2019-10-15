@@ -14,6 +14,9 @@ This repository is for giving you the tools you need to make experiments reprodu
 
 The best way to see how to use this repository is in the examples folder. [parallel.jl](examples/parallel.jl) shows all the parallel and experiment utilities in action, while running an experiment in [experiment.jl](examples/experiment.jl) which shows off the data management, and arg parsing.
 
+## Slurm
+
+Temporarily, I've updated a local version of the SLURM cluster managers as the [ClusterManagers.jl](https://github.com/JuliaParallel/ClusterManagers.jl/blob/master/src/ClusterManagers.jl) package updates to 1.x. 
 
 ## What's next.
 
