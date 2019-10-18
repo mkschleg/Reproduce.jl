@@ -29,7 +29,12 @@ The goal is to make a convenient framework for data analysis for experiments in 
 - [ ] Plotting utilities (Up Next!)
 - [ ] Frontend for visualizing data.
 - [x] Testing with slurm backend. (Make sure your experiments run *BEFORE* a job is scheduled.)
+- [ ] Move away from JLD2 for settings files. CSV?
 - [ ] More examples. (maybeeee.....)
 - [ ] Docs
 
 HELP WANTED! Contact me via issues panel, or setup a PR.
+
+## Known Bugs:
+
+  - JLD2 has a bug where sometimes the io resource becomes busy. I'm unsure when this happens, or how to reproduce but there is some discussion happening on the Julia Discourse: https://discourse.julialang.org/t/error-ebusy-on-saving-jld2-file-using-julia-1-3-0-rc2/29228/10. If you run into this error close your terminal session and start a new one, this fixes it for me.  
