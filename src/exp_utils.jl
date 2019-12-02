@@ -129,9 +129,11 @@ function add_experiment(exp_dir::AbstractString,
         write(f, exp_str)
     end
 
-    @save settings_file Dict{String, Any}(
-        "args_iter"=>args_iter,
-        "make_args_str"=>make_args_str)
+    jldopen(settings_file, "w") do file
+        # mygroup = JLD2.Group(file, "")
+        file["args_iter"]=args_iter
+        file["make_args_str"]=make_args_str
+    end
 
 end
 
