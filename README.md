@@ -14,6 +14,9 @@ This repository is for giving you the tools you need to make experiments reprodu
 
 The best way to see how to use this repository is in the examples folder. [parallel.jl](examples/parallel.jl) shows all the parallel and experiment utilities in action, while running an experiment in [experiment.jl](examples/experiment.jl) which shows off the data management, and arg parsing.
 
+## Slurm
+
+Temporarily, I've updated a local version of the SLURM cluster managers as the [ClusterManagers.jl](https://github.com/JuliaParallel/ClusterManagers.jl/blob/master/src/ClusterManagers.jl) package updates to 1.x. 
 
 ## What's next.
 
@@ -26,7 +29,12 @@ The goal is to make a convenient framework for data analysis for experiments in 
 - [ ] Plotting utilities (Up Next!)
 - [ ] Frontend for visualizing data.
 - [x] Testing with slurm backend. (Make sure your experiments run *BEFORE* a job is scheduled.)
+- [ ] Move away from JLD2 for settings files. CSV?
 - [ ] More examples. (maybeeee.....)
 - [ ] Docs
 
 HELP WANTED! Contact me via issues panel, or setup a PR.
+
+## Known Bugs:
+
+  - JLD2 has a bug where sometimes the io resource becomes busy. I'm unsure when this happens, or how to reproduce but there is some discussion happening on the Julia Discourse: https://discourse.julialang.org/t/error-ebusy-on-saving-jld2-file-using-julia-1-3-0-rc2/29228/10. If you run into this error close your terminal session and start a new one, this fixes it for me.  
