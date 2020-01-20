@@ -72,7 +72,7 @@ function job(experiment_file::AbstractString,
                    exception_dir=exception_dir)
 end
 
-function job(config_file::AbstractString, dir::AbstractString, num_runs::Int; kwargs...)
+function config_job(config_file::AbstractString, dir::AbstractString, num_runs::Int; kwargs...)
     cfg = ConfigManager(config_file, dir)
     exp_module_name = cfg.config_dict["config"]["exp_module_name"]
     exp_file = cfg.config_dict["config"]["exp_file"]

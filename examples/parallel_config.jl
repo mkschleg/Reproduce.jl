@@ -25,11 +25,11 @@ function main()
 
     # cfg = ConfigManager(parsed["config_file"], save_loc)
     create_experiment_dir(save_loc; org_file=false)
-    job(parsed["config_file"],
-        save_loc,
-        parsed["runs"];
-        num_workers=parsed["numworkers"],
-        extra_args=[save_loc])
+    config_job(parsed["config_file"],
+               save_loc,
+               parsed["runs"];
+               num_workers=parsed["numworkers"],
+               extra_args=[save_loc])
 end
 
 main()

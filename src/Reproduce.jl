@@ -25,7 +25,7 @@ include("args_looper.jl")
 export Experiment, create_experiment_dir, add_experiment, post_experiment
 include("exp_utils.jl")
 
-export job
+export job, config_job
 include("parallel_experiment.jl")
 # greeting() = println("Hello World!")
 

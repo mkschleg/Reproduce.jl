@@ -48,6 +48,7 @@ function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
     args = Dict(
         "opt1"=>cfg["args"]["opt1"],
         "opt2"=>cfg["args"]["opt2"],
+        "run"=>cfg["run"],
         "saveloc"=>saveloc
     )
     
