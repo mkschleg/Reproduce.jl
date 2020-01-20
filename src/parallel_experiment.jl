@@ -246,7 +246,7 @@ function parallel_job(experiment_file::AbstractString,
                 !(isfile(joinpath(Config.get_logdir(args), "exception.txt")) ||
                   isfile(Config.get_datafile(args)))
             else
-                true
+                !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
             end
             
             if run_exp

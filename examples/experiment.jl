@@ -16,7 +16,7 @@ function arg_parse_settings(as::ArgParseSettings = ArgParseSettings())
     return as
 end
 
-
+# current use of args iterator.
 function main_experiment(args::Vector{String}, saveloc::String="default_save_loc")
 
 
@@ -27,10 +27,7 @@ function main_experiment(args::Vector{String}, saveloc::String="default_save_loc
     if parsed["opt1"] == 2
         throw("Oh No!!!")
     end
-    # sleep(0.1*(parsed["opt1"]^4))
-#    for i in 1:parsed["opt1"]^3
-#        j += i
-#    end
+
     @save joinpath(parsed["_SAVE"], "data.jld2") args
 
     return j
