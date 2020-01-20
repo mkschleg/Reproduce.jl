@@ -4,7 +4,6 @@ using Logging
 using SharedArrays
 using JLD2
 using Dates
-
 using Config
 
 include("slurm.jl")
@@ -81,6 +80,8 @@ function config_job(config_file::AbstractString, dir::AbstractString, num_runs::
         exp_module_name=Symbol(exp_module_name),
         exp_func_name=Symbol(exp_func_name),
         exception_dir = joinpath("except", cfg.config_dict["save_path"]),
+        job_file_dir = joinpath(dir, "jobs", cfg.config_dict["save_path"]),
+        # joblog_file = joinpath(dir, cfg.config_dict["save_path"]*".log"),
         kwargs...)
 end
 
@@ -135,6 +136,16 @@ end
 
 
 
+function check_log(args, jobfile, lock_file)
+
+
+
+        
+    
+end
+
+
+
 
 """
     parallel_job
@@ -166,11 +177,22 @@ function parallel_job(experiment_file::AbstractString,
         job_file_dir = joinpath(exp_dir, "jobs")
     end
 
+    # if joblog_file == ""
+    #     joblog_file = joinpath(exp_dir, "completed.log")
+    # end
+
+    # lock_file = joblog_file*".lock"
+    # if isfile(lock_file)
+    #     rm(lock_file)
+    # end
+
     pids = create_procs(num_workers, project, job_file_dir)
     println(nworkers(), " ", pids)
 
     n = length(args_iter)
 
+    
+    
     
     #########
     #
@@ -178,7 +200,9 @@ function parallel_job(experiment_file::AbstractString,
     #
     ########
 
-    job_id_channel = RemoteChannel(()->Channel{Int}(length(args_iter)), 1)    
+    job_id_channel = RemoteChannel(()->Channel{Int}(length(args_iter)), 1)
+
+    done_channel = RemoteChannel(()->Channel{Bool}(1), 1)
 
     try
 
@@ -191,6 +215,8 @@ function parallel_job(experiment_file::AbstractString,
             @everywhere const global extra_args=$extra_args
             @everywhere const global store_exceptions=$store_exceptions
             @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
+            # @everywhere const global joblog_file = $joblog_file
+            # @everywhere const global lock_file = $lock_file
 
             @everywhere begin
                 eval(:(using Reproduce))
@@ -212,14 +238,17 @@ function parallel_job(experiment_file::AbstractString,
         if store_exceptions && !isdir(exception_loc)
             mkpath(exception_loc)
         end
-
+            
+           
         ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
+
             run_exp = if args isa ConfigManager
                 !(isfile(joinpath(Config.get_logdir(args), "exception.txt")) ||
                   isfile(Config.get_datafile(args)))
             else
                 true
             end
+            
             if run_exp
                 try
                     if expand_args
@@ -227,7 +256,7 @@ function parallel_job(experiment_file::AbstractString,
                     else
                         Main.exp_func(args, extra_args...)
                     end
-                
+                    
                 catch ex
                     if isa(ex, InterruptException)
                         throw(InterruptException())
@@ -248,9 +277,12 @@ function parallel_job(experiment_file::AbstractString,
                         end
                     end
                 end
+            elseif verbose
+                @warn  "Not running job for $(job_id)"
             end
             Distributed.put!(job_id_channel, job_id)
-        end
+        end # ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
+        
 
     catch ex
         println(ex)
