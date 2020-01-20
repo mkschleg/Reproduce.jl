@@ -1,6 +1,7 @@
 
 using Reproduce
-using FileIO, JLD2
+using JLD2
+using Config
 
 function arg_parse_settings(as::ArgParseSettings = ArgParseSettings())
 
@@ -33,4 +34,23 @@ function main_experiment(args::Vector{String}, saveloc::String="default_save_loc
     @save joinpath(parsed["_SAVE"], "data.jld2") args
 
     return j
+end
+
+
+# When using Config.jl as a config manager.
+
+function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
+    j = 0
+    if cfg["args"]["opt1"] == 2
+        throw("Oh No!!!")
+    end
+
+    args = Dict(
+        "opt1"=>cfg["args"]["opt1"],
+        "opt2"=>cfg["args"]["opt2"],
+        "saveloc"=>saveloc
+    )
+    
+    save(cfg, args)
+    return j 
 end

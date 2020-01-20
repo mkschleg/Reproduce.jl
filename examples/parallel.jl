@@ -31,7 +31,10 @@ function test_experiment()
 
     static_args = ["--steps", "102902"]
 
-    args_iterator = ArgIterator(arg_dict, static_args; arg_list=arg_list, make_args=make_arguments)
+    args_iterator = ArgIterator(arg_dict,
+                                static_args;
+                                arg_list=arg_list,
+                                make_args=make_arguments)
 
 
     experiment = Experiment(save_loc,

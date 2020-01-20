@@ -1,29 +1,51 @@
 using Dates
 using CodeTracking
 using Git
-# using FileIO,
 using JLD2
 using Logging
 
+"""
+    Experiment
 
-struct Experiment
+This is a struct which encapsulates the idea of an experiment.
+
+"""
+struct Experiment{I}
     dir::AbstractString
     file::AbstractString
     module_name::Union{String, Symbol}
     func_name::Union{String, Symbol}
-    args_iter::AbstractArgIter
+    args_iter::I
     hash::UInt64
     function Experiment(dir::AbstractString,
                         file::AbstractString,
                         module_name::Union{String, Symbol},
                         func_name::Union{String, Symbol},
-                        args_iter::AbstractArgIter)
-        new(dir, file, module_name, func_name, args_iter, hash(string(args_iter)))
+                        args_iter)
+        new{typeof(args_iter)}(dir, file, module_name, func_name, args_iter, hash(string(args_iter)))
     end
 end
 
+function _safe_mkdir(exp_dir)
+    try
+        mkdir(exp_dir)
+    catch ex
+        @info "Somebody else created directory... Waiting"
+        if isa(ex, SystemError) && ex.errnum == 17
+            sleep(0.1) # Other Process Made folder. Waiting...
+        else
+            throw(ex)
+        end
+    end
+end
 
-function create_experiment_dir(exp_dir::String;
+"""
+    create_experiment_dir(exp_dir::AbstractString; org_file=true, replace=false, tldr="")
+
+This creates an experiment directory and sets up a notes file.
+
+"""
+function create_experiment_dir(exp_dir::AbstractString;
                                org_file=true,
                                replace=false,
                                tldr="")
@@ -34,26 +56,19 @@ function create_experiment_dir(exp_dir::String;
             return
         else
             @info "directory already created - told to replace..."
-            rm(joinpath(exp_dir, "notes.org"))
+            rm(exp_dir; force=true, recursive=true)
+            _safe_mkdir(exp_dir)
         end
     else
         @info "creating experiment directory"
-        # mkdir(exp_dir)
-        try
-            mkdir(exp_dir)
-        catch ex
-            @info "Somebody else created directory... Waiting"
-            if isa(ex, SystemError) && ex.errnum == 17
-                sleep(0.1) # Other Process Made folder. Waiting...
-            else
-                throw(ex)
-            end
-        end
+        _safe_mkdir(exp_dir)
     end
 
-    open(joinpath(exp_dir, "notes.org"), "w") do f
-        write(f, "#+title: Experimental Notes for $(exp_dir)\n\n")
-        write(f, "TL;DR: $(tldr)\n\n")
+    if org_file
+        open(joinpath(exp_dir, "notes.org"), "w") do f
+            write(f, "#+title: Experimental Notes for $(exp_dir)\n\n")
+            write(f, "TL;DR: $(tldr)\n\n")
+        end
     end
 
     return
@@ -85,18 +100,7 @@ function add_experiment(exp_dir::AbstractString,
     @info "Adding Experiment to $(exp_dir)"
 
     settings_dir = joinpath(exp_dir, settings_dir)
-
-    if settings_dir != "" && !isdir(settings_dir)
-        try
-            mkdir(settings_dir)
-        catch ex
-            if isa(ex, SystemError) && ex.errnum == 17
-                sleep(0.1) # Other Process Made folder. Waiting...
-            else
-                throw(ex)
-            end
-        end
-    end
+    _safe_mkdir(settings_dir)
 
     settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
 
@@ -108,8 +112,6 @@ function add_experiment(exp_dir::AbstractString,
         m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
         make_args_str, line1 = definition(String, m)
     end
-
-    d = 
 
     open(joinpath(exp_dir, "notes.org"), "a") do f
         exp_str = "* " * date_str * "\n\n" *
@@ -130,7 +132,6 @@ function add_experiment(exp_dir::AbstractString,
     end
 
     jldopen(settings_file, "w") do file
-        # mygroup = JLD2.Group(file, "")
         file["args_iter"]=args_iter
         file["make_args_str"]=make_args_str
     end
@@ -139,7 +140,6 @@ end
 
 function add_experiment(exp::Experiment;
                         kwargs...)
-
     add_experiment(exp.dir,
                    exp.file,
                    String(exp.module_name),
@@ -147,7 +147,6 @@ function add_experiment(exp::Experiment;
                    exp.args_iter,
                    exp.hash;
                    kwargs...)
-
 end
 
 function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1})

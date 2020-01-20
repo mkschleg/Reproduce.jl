@@ -1,6 +1,8 @@
 
 module Reproduce
 
+using Config
+
 export
     create_info!,
     create_info,
