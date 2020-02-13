@@ -22,14 +22,20 @@ Temporarily, I've updated a local version of the SLURM cluster managers as the [
 
 The goal is to make a convenient framework for data analysis for experiments in ML/RL. The goal is to create something like [mlflow](mlflow.org) for Julia. It might be worthwhile to actually take advantage of the mlflow framework, or even a similar framework for the future.
 
+## Plan for further integration w/ config files
+
+- Define arg_iterators in terms of config files
+- Define compatibility w/ arg settings and arg parse setting.
+
+
 ## TODOs
 
-- [ ] Allow for YAML specification
+- [x] Allow for TOML/JSON specification -> Implemented through Config.jl
 - [x] Data searching (Mostly done. Could probably use more testing...)
 - [ ] Plotting utilities (Up Next!)
 - [ ] Frontend for visualizing data.
 - [x] Testing with slurm backend. (Make sure your experiments run *BEFORE* a job is scheduled.)
-- [ ] Move away from JLD2 for settings files. CSV?
+- [ ] Move away from JLD2 for settings files. CSV? TOML?
 - [ ] More examples. (maybeeee.....)
 - [ ] Docs
 
