@@ -1,3 +1,4 @@
+
 using Distributed
 using ProgressMeter
 using Logging
@@ -76,6 +77,14 @@ function config_job(config_file::AbstractString, dir::AbstractString, num_runs::
     exp_module_name = cfg.config_dict["config"]["exp_module_name"]
     exp_file = cfg.config_dict["config"]["exp_file"]
     exp_func_name = cfg.config_dict["config"]["exp_func_name"]
+    if IN_SLURM()
+        if !isdir(joinpath(dir, "jobs"))
+            mkdir(joinpath(dir, "jobs"))
+        end
+        if !isdir(joinpath(dir, "jobs", cfg.config_dict["save_path"]))
+            mkdir(joinpath(dir, "jobs", cfg.config_dict["save_path"]))
+        end
+    end
     job(exp_file, dir, Config.iterator(cfg, num_runs);
         exp_module_name=Symbol(exp_module_name),
         exp_func_name=Symbol(exp_func_name),
