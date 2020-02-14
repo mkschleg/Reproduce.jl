@@ -22,7 +22,7 @@ function Item(settings_file::AbstractString)
     end
     parsed_args = dict["parsed_args"]
     used_keys = dict["used_keys"]
-    return Item(settings_file, parsed_args, used_keys)
+    return Item(dirname(settings_file), parsed_args, used_keys)
 end
 
 """
