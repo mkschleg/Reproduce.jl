@@ -25,7 +25,7 @@ end
 
 function test_experiment()
     arg_dict = Dict(
-        ["opt1"=>collect(1:50), "opt2"=>[5,6,7,8]]
+        ["opt1"=>collect(1:10), "opt2"=>[5,6,7,8]]
     )
     arg_list = ["opt1", "opt2"]
 

@@ -90,7 +90,6 @@ function config_job(config_file::AbstractString, dir::AbstractString, num_runs::
         exp_func_name=Symbol(exp_func_name),
         exception_dir = joinpath("except", cfg.config_dict["save_path"]),
         job_file_dir = joinpath(dir, "jobs", cfg.config_dict["save_path"]),
-        # joblog_file = joinpath(dir, cfg.config_dict["save_path"]*".log"),
         kwargs...)
 end
 
@@ -120,10 +119,6 @@ function create_procs(num_workers, project, job_file_dir)
         num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
         if num_add_workers != 0
             # assume started fresh julia instance...
-	    # println("Adding Slurm Jobs!!!")
-            # if job_file_dir == ""
-            #     job_file_dir = joinpath(exp_dir, "jobs")
-            # end
             pids = addprocs(SlurmManager(num_add_workers);
                             exeflags=["--project=$(project)", "--color=$(color_opt)"],
                             job_file_loc=job_file_dir)
@@ -142,17 +137,6 @@ function create_procs(num_workers, project, job_file_dir)
     end
     return pids
 end
-
-
-
-function check_log(args, jobfile, lock_file)
-
-
-
-        
-    
-end
-
 
 
 
@@ -186,23 +170,11 @@ function parallel_job(experiment_file::AbstractString,
         job_file_dir = joinpath(exp_dir, "jobs")
     end
 
-    # if joblog_file == ""
-    #     joblog_file = joinpath(exp_dir, "completed.log")
-    # end
-
-    # lock_file = joblog_file*".lock"
-    # if isfile(lock_file)
-    #     rm(lock_file)
-    # end
-
     pids = create_procs(num_workers, project, job_file_dir)
     println(nworkers(), " ", pids)
 
     n = length(args_iter)
 
-    
-    
-    
     #########
     #
     # Meaty middle: Compiling code, running jobs, managing which jobs fail.
@@ -224,8 +196,6 @@ function parallel_job(experiment_file::AbstractString,
             @everywhere const global extra_args=$extra_args
             @everywhere const global store_exceptions=$store_exceptions
             @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
-            # @everywhere const global joblog_file = $joblog_file
-            # @everywhere const global lock_file = $lock_file
 
             @everywhere begin
                 eval(:(using Reproduce))
@@ -290,8 +260,7 @@ function parallel_job(experiment_file::AbstractString,
                 @warn  "Not running job for $(job_id)"
             end
             Distributed.put!(job_id_channel, job_id)
-        end # ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
-        
+        end
 
     catch ex
         println(ex)

@@ -1,24 +1,42 @@
+# get Pkg version of toml.
+using Pkg.TOML
 
-
-struct ArgIterator <: AbstractArgIter
+struct ArgIterator{A, SA} <: AbstractArgIter
     dict::Dict
-    stable_arg::Vector{String}
+    static_args::SA
     arg_list::Vector{String}
     done::Bool
-    make_args
-    ArgIterator(dict, stable_arg; arg_list=nothing, make_args=nothing) = new(dict, stable_arg, arg_list==nothing ? collect(keys(dict)) : arg_list, false, make_args)
+    make_args::A
 end
 
-function make_arguments(iter::ArgIterator, state)
-    arg_list = Vector{String}()
+function ArgIterator(dict, static_arg::Vector{String}; arg_list=nothing, make_args=nothing)
+    @warn "Arg Iterators w/ arg_parse is deprecated in favor of passing a dictionary to your experiments."
+    ArgIterator(dict,
+                static_arg,
+                arg_list==nothing ? collect(keys(dict)) : arg_list,
+                false,
+                make_args)
+end
 
-    if iter.make_args == nothing
+function ArgIterator(dict, static_arg::Dict; arg_list=nothing)
+    ArgIterator(dict,
+                static_arg,
+                arg_list==nothing ? collect(keys(dict)) : arg_list,
+                false,
+                nothing)
+end
+
+
+
+function make_arguments(iter::ArgIterator{A, Vector{String}}, state) where {A}
+    arg_list = Vector{String}()
+    if iter.make_args isa Nothing
         new_ret_list = Vector{String}()
         for (arg_idx, arg) in enumerate(iter.arg_list)
             push!(new_ret_list, arg)
             push!(new_ret_list, string(iter.dict[arg][state[2][arg_idx]]))
         end
-        arg_list = [new_ret_list; iter.stable_arg]
+        arg_list = [new_ret_list; iter.static_args]
     else
         d = Dict{String, Union{String, Tuple}}()
         for (arg_idx, arg) in enumerate(iter.arg_list)
@@ -28,8 +46,21 @@ function make_arguments(iter::ArgIterator, state)
                 d[arg] = string(iter.dict[arg][state[2][arg_idx]])
             end
         end
-        arg_list = [iter.make_args(d); iter.stable_arg]
+        arg_list = [iter.make_args(d); iter.static_args]
     end
+end
+
+function make_arguments(iter::ArgIterator{A, SA}, state) where {A, SA<:Dict}
+    d = Dict{String, Any}()
+    for (arg_idx, arg) in enumerate(iter.arg_list)
+        if typeof(iter.dict[arg][state[2][arg_idx]]) <: Tuple
+            d[arg] = iter.dict[arg][state[2][arg_idx]]
+        else
+            d[arg] = iter.dict[arg][state[2][arg_idx]]
+        end
+    end
+    merge!(d, iter.static_args)
+    d
 end
 
 function Base.iterate(iter::ArgIterator)
@@ -53,7 +84,6 @@ function next_state(iter::ArgIterator, _state)
             state[arg_idx] = 1
             state[arg_idx - 1] += 1
         end
-
     end
 end
 

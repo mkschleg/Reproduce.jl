@@ -16,26 +16,29 @@ function arg_parse_settings(as::ArgParseSettings = ArgParseSettings())
     return as
 end
 
-# current use of args iterator.
-function main_experiment(args::Vector{String}, saveloc::String="default_save_loc")
-
-
+function main_experiment(args::Vector{String}, saveloc::AbstractString="default_save_loc")
     arg_settings = arg_parse_settings()
     parsed = parse_args(args, arg_settings)
-    create_info!(parsed, saveloc)
+    main_experiment(parsed, saveloc)
+end
+
+function main_experiment(parsed::Dict, saveloc = nothing)
+    if saveloc isa Nothing
+        create_info!(parsed, parsed["save_dir"])
+    else
+        create_info!(parsed, saveloc)
+    end
     j = 0
     if parsed["opt1"] == 2
         throw("Oh No!!!")
     end
 
-    @save joinpath(parsed["_SAVE"], "data.jld2") args
+    @save joinpath(parsed["_SAVE"], "data.jld2") parsed
 
     return j
 end
 
-
 # When using Config.jl as a config manager.
-
 function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
     j = 0
     if cfg["args"]["opt1"] == 2
@@ -52,3 +55,4 @@ function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
     save(cfg, args)
     return j 
 end
+
