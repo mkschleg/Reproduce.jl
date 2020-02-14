@@ -40,7 +40,7 @@ function test_args_iter()
                   (15, ["--c1", "2", "--c2", "2034.0", "--a", "3", "--b", "2"])
                   (16, ["--c1", "2", "--c2", "2034.0", "--a", "4", "--b", "2"])]
     
-    arg_iter = ArgIterator(args_dict, []; make_args=make_args)
+    arg_iter = ArgIterator(args_dict, String[]; make_args=make_args)
     return all([answer[arg[1]] == arg for arg in arg_iter])
 end
 

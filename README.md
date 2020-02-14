@@ -14,6 +14,13 @@ This repository is for giving you the tools you need to make experiments reprodu
 
 The best way to see how to use this repository is in the examples folder. [parallel.jl](examples/parallel.jl) shows all the parallel and experiment utilities in action, while running an experiment in [experiment.jl](examples/experiment.jl) which shows off the data management, and arg parsing.
 
+### Config
+
+To run the config example:
+```zsh
+julia --project examples/parallel_config.jl examples/test_config.toml 5 test_config --numworkers 6
+```
+
 ## Slurm
 
 Temporarily, I've updated a local version of the SLURM cluster managers as the [ClusterManagers.jl](https://github.com/JuliaParallel/ClusterManagers.jl/blob/master/src/ClusterManagers.jl) package updates to 1.x. 
@@ -22,14 +29,20 @@ Temporarily, I've updated a local version of the SLURM cluster managers as the [
 
 The goal is to make a convenient framework for data analysis for experiments in ML/RL. The goal is to create something like [mlflow](mlflow.org) for Julia. It might be worthwhile to actually take advantage of the mlflow framework, or even a similar framework for the future.
 
+## Plan for further integration w/ config files
+
+- Define arg_iterators in terms of config files
+- Define compatibility w/ arg settings and arg parse setting.
+
+
 ## TODOs
 
-- [ ] Allow for YAML specification
+- [x] Allow for TOML/JSON specification -> Implemented through Config.jl
 - [x] Data searching (Mostly done. Could probably use more testing...)
 - [ ] Plotting utilities (Up Next!)
 - [ ] Frontend for visualizing data.
 - [x] Testing with slurm backend. (Make sure your experiments run *BEFORE* a job is scheduled.)
-- [ ] Move away from JLD2 for settings files. CSV?
+- [ ] Move away from JLD2 for settings files. CSV? TOML?
 - [ ] More examples. (maybeeee.....)
 - [ ] Docs
 

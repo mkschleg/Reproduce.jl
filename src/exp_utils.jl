@@ -1,29 +1,86 @@
 using Dates
 using CodeTracking
 using Git
-# using FileIO,
 using JLD2
 using Logging
+using Pkg.TOML
 
+"""
+    Experiment
 
-struct Experiment
+This is a struct which encapsulates the idea of an experiment.
+
+"""
+struct Experiment{I}
     dir::AbstractString
     file::AbstractString
-    module_name::Union{String, Symbol}
-    func_name::Union{String, Symbol}
-    args_iter::AbstractArgIter
+    module_name::Symbol
+    func_name::Symbol
+    args_iter::I
     hash::UInt64
     function Experiment(dir::AbstractString,
                         file::AbstractString,
                         module_name::Union{String, Symbol},
                         func_name::Union{String, Symbol},
-                        args_iter::AbstractArgIter)
-        new(dir, file, module_name, func_name, args_iter, hash(string(args_iter)))
+                        args_iter)
+        new{typeof(args_iter)}(dir, file, Symbol(module_name), Symbol(func_name), args_iter, hash(string(args_iter)))
     end
 end
 
+function Experiment(config::AbstractString)
+    dict = TOML.parsefile(config)
 
-function create_experiment_dir(exp_dir::String;
+    cdict = dict["config"]
+    save_dir = cdict["save_dir"]
+    exp_file = cdict["exp_file"]
+    exp_module_name = cdict["exp_module_name"]
+    exp_func_name = cdict["exp_func_name"]
+
+    iter_type = cdict["arg_iter_type"]
+    arg_list = get(cdict, "arg_list_order", nothing)
+
+    @assert arg_list isa Nothing || all(sort(arg_list) .== sort(collect(keys(dict["sweep_args"]))))
+
+    args = if iter_type == "iter"
+        static_args_dict = get(dict, "static_args", Dict{String, Any}())
+        static_args_dict["save_dir"] = joinpath(save_dir, "data")
+        ArgIterator(dict["sweep_args"],
+                    static_args_dict,
+                    arg_list=arg_list)
+    elseif iter_type == "looper"
+        throw("Looper w/ Toml Config Not Implemented Yet")
+    else
+        throw("$(iter_type) not supported.")
+    end
+
+    experiment = Experiment(save_dir,
+                            exp_file,
+                            exp_module_name,
+                            exp_func_name,
+                            args)
+    
+end
+
+function _safe_mkdir(exp_dir)
+    try
+        mkdir(exp_dir)
+    catch ex
+        @info "Somebody else created directory... Waiting"
+        if isa(ex, SystemError) && ex.errnum == 17
+            sleep(0.1) # Other Process Made folder. Waiting...
+        else
+            throw(ex)
+        end
+    end
+end
+
+"""
+    create_experiment_dir(exp_dir::AbstractString; org_file=true, replace=false, tldr="")
+
+This creates an experiment directory and sets up a notes file.
+
+"""
+function create_experiment_dir(exp_dir::AbstractString;
                                org_file=true,
                                replace=false,
                                tldr="")
@@ -34,26 +91,33 @@ function create_experiment_dir(exp_dir::String;
             return
         else
             @info "directory already created - told to replace..."
-            rm(joinpath(exp_dir, "notes.org"))
+            rm(exp_dir; force=true, recursive=true)
+            _safe_mkdir(exp_dir)
         end
     else
         @info "creating experiment directory"
-        # mkdir(exp_dir)
-        try
-            mkdir(exp_dir)
-        catch ex
-            @info "Somebody else created directory... Waiting"
-            if isa(ex, SystemError) && ex.errnum == 17
-                sleep(0.1) # Other Process Made folder. Waiting...
-            else
-                throw(ex)
-            end
-        end
+        _safe_mkdir(exp_dir)
     end
 
-    open(joinpath(exp_dir, "notes.org"), "w") do f
-        write(f, "#+title: Experimental Notes for $(exp_dir)\n\n")
-        write(f, "TL;DR: $(tldr)\n\n")
+    if isdir(joinpath(exp_dir, "data"))
+        if !replace
+            @info "data directory already created - told to not replace..."
+            return
+        else
+            @info "directory already created - told to replace..."
+            # rm(exp_dir; force=true, recursive=true)
+            _safe_mkdir(joinpath(exp_dir, "data"))
+        end
+    else
+        @info "creating experiment directory"
+        _safe_mkdir(joinpath(exp_dir, "data"))
+    end
+
+    if org_file
+        open(joinpath(exp_dir, "notes.org"), "w") do f
+            write(f, "#+title: Experimental Notes for $(exp_dir)\n\n")
+            write(f, "TL;DR: $(tldr)\n\n")
+        end
     end
 
     return
@@ -85,18 +149,7 @@ function add_experiment(exp_dir::AbstractString,
     @info "Adding Experiment to $(exp_dir)"
 
     settings_dir = joinpath(exp_dir, settings_dir)
-
-    if settings_dir != "" && !isdir(settings_dir)
-        try
-            mkdir(settings_dir)
-        catch ex
-            if isa(ex, SystemError) && ex.errnum == 17
-                sleep(0.1) # Other Process Made folder. Waiting...
-            else
-                throw(ex)
-            end
-        end
-    end
+    _safe_mkdir(settings_dir)
 
     settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
 
@@ -109,8 +162,6 @@ function add_experiment(exp_dir::AbstractString,
         make_args_str, line1 = definition(String, m)
     end
 
-    d = 
-
     open(joinpath(exp_dir, "notes.org"), "a") do f
         exp_str = "* " * date_str * "\n\n" *
             tab*"Git-head: $(Git.head())\n" *
@@ -120,24 +171,24 @@ function add_experiment(exp_dir::AbstractString,
             tab*"experiment function: $(string(exp_func_name))\n\n" *
             tab*"settings file: $(settings_dir)\n\n" *
             tab*"#+BEGIN_SRC julia\n" *
-            (typeof(args_iter) == ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
-            (typeof(args_iter) == ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
-            tab*"stable_arg = $(args_iter.stable_arg)\n\n" *
+            (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
+            (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
+            tab*"static_arg = $(args_iter.static_args)\n\n" *
             tab*"#Make Arguments\n" *
             tab*make_args_str*"\n" *
             tab*"#+END_SRC\n\n"
         write(f, exp_str)
     end
 
-    @save settings_file Dict{String, Any}(
-        "args_iter"=>args_iter,
-        "make_args_str"=>make_args_str)
+    jldopen(settings_file, "w") do file
+        file["args_iter"]=args_iter
+        file["make_args_str"]=make_args_str
+    end
 
 end
 
 function add_experiment(exp::Experiment;
                         kwargs...)
-
     add_experiment(exp.dir,
                    exp.file,
                    String(exp.module_name),
@@ -145,7 +196,6 @@ function add_experiment(exp::Experiment;
                    exp.args_iter,
                    exp.hash;
                    kwargs...)
-
 end
 
 function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1})
@@ -190,6 +240,4 @@ function exception_file(exc_file::AbstractString, job_id, exception, trace)
 
     return
 end
-
-
 

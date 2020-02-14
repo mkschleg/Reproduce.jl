@@ -1,12 +1,12 @@
-#!/home/mkschleg/opt/bin/julia
-#SBATCH -o test_err.out # Standard output
-#SBATCH -e test_out.err # Standard error
-#SBATCH --mem-per-cpu=1000M # Memory request of 1 GB
-#SBATCH --time=00:05:00 # Running time of 10 minutes
-#SBATCH --ntasks=256
-#SBATCH --cpus-per-task=1
-#SBATCH --account=def-whitem
-#SBATCH --no-kill
+#!/cvmfs/soft.computecanada.ca/easybuild/software/2017/avx2/Compiler/gcc7.3/julia/1.3.0/bin/julia
+#SBATCH --mail-user=mkschleg@ualberta.ca
+#SBATCH --mail-type=ALL
+#SBATCH -o reproduce_test.out # Standard output
+#SBATCH -e reproduce_test.err # Standard error
+#SBATCH --mem-per-cpu=512M # Memory request of 2 GB
+#SBATCH --time=0:10:00 # Running time of 12 hours
+#SBATCH --ntasks=8
+#SBATCH --account=rrg-whitem
 
 using Pkg
 Pkg.activate(".")
@@ -25,13 +25,16 @@ end
 
 function test_experiment()
     arg_dict = Dict(
-        ["opt1"=>collect(1:50), "opt2"=>[5,6,7,8]]
+        ["opt1"=>collect(1:10), "opt2"=>[5,6,7,8]]
     )
     arg_list = ["opt1", "opt2"]
 
     static_args = ["--steps", "102902"]
 
-    args_iterator = ArgIterator(arg_dict, static_args; arg_list=arg_list, make_args=make_arguments)
+    args_iterator = ArgIterator(arg_dict,
+                                static_args;
+                                arg_list=arg_list,
+                                make_args=make_arguments)
 
 
     experiment = Experiment(save_loc,
