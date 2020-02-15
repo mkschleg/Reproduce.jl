@@ -22,6 +22,7 @@ SharedArrays = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [compat]
+FileIO = "1.2"
 ArgParse = "1.0"
 JLD2 = "0.1"
 Config = "0.1.1"
