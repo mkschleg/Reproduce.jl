@@ -30,7 +30,13 @@ struct Experiment{I}
 end
 
 function Experiment(config::AbstractString)
-    dict = TOML.parsefile(config)
+
+    
+    dict = if splitext(config)[end] == ".toml"
+        TOML.parsefile(config)
+    elseif splitext(config)[end] == ".json"
+        JSON.Parser.parsefile(config)
+    end
 
     cdict = dict["config"]
     save_dir = cdict["save_dir"]
@@ -161,6 +167,11 @@ function add_experiment(exp_dir::AbstractString,
     _safe_mkdir(settings_dir)
 
     settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
+    config_file = if config isa Nothing
+        nothing
+    else
+        joinpath(settings_dir, "config_0x"*string(hash, base=16)*splitext(config)[end])
+    end
 
     date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
     tab = "\t"
@@ -178,14 +189,15 @@ function add_experiment(exp_dir::AbstractString,
             tab*"experiment file: $(experiment_file)\n" *
             tab*"experiment module: $(string(exp_module_name))\n" *
             tab*"experiment function: $(string(exp_func_name))\n\n" *
-            tab*"settings file: $(settings_dir)\n\n" *
-            tab*"#+BEGIN_SRC julia\n" *
+            tab*"settings file: $(basename(settings_file))\n" *
+            (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
+            tab*"#+BEGIN_src julia\n" *
             (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
             (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
             tab*"static_arg = $(args_iter.static_args)\n\n" *
             tab*"#Make Arguments\n" *
             tab*make_args_str*"\n" *
-            tab*"#+END_SRC\n\n"
+            tab*"#+END_src\n\n"
         write(f, exp_str)
     end
 
@@ -195,7 +207,7 @@ function add_experiment(exp_dir::AbstractString,
     end
 
     if !(config isa Nothing)
-        cp(config, joinpath(settings_dir, "config_0x"*string(hash, base=16)*splitext(config)[end]))
+        cp(config, config_file)
     end
 
 end
