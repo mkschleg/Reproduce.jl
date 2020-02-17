@@ -18,12 +18,14 @@ struct Experiment{I}
     func_name::Symbol
     args_iter::I
     hash::UInt64
+    config::Union{String, Nothing}
     function Experiment(dir::AbstractString,
                         file::AbstractString,
                         module_name::Union{String, Symbol},
                         func_name::Union{String, Symbol},
-                        args_iter)
-        new{typeof(args_iter)}(dir, file, Symbol(module_name), Symbol(func_name), args_iter, hash(string(args_iter)))
+                        args_iter,
+                        config=nothing)
+        new{typeof(args_iter)}(dir, file, Symbol(module_name), Symbol(func_name), args_iter, hash(string(args_iter)), config)
     end
 end
 
@@ -44,6 +46,12 @@ function Experiment(config::AbstractString)
     args = if iter_type == "iter"
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
         static_args_dict["save_dir"] = joinpath(save_dir, "data")
+        sweep_args_dict = dict["sweep_args"]
+        for key ∈ keys(sweep_args_dict)
+            if sweep_args_dict[key] isa String
+                sweep_args_dict[key] = eval(Meta.parse(sweep_args_dict[key]))
+            end
+        end
         ArgIterator(dict["sweep_args"],
                     static_args_dict,
                     arg_list=arg_list)
@@ -57,7 +65,7 @@ function Experiment(config::AbstractString)
                             exp_file,
                             exp_module_name,
                             exp_func_name,
-                            args)
+                            args, config)
     
 end
 
@@ -135,7 +143,8 @@ function add_experiment(exp_dir::AbstractString,
                         exp_module_name::AbstractString,
                         exp_func_name::AbstractString,
                         args_iter::AbstractArgIter,
-                        hash::UInt64;
+                        hash::UInt64,
+                        config=nothing;
                         settings_dir="", add_all_tasks=false)
 
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
@@ -185,6 +194,10 @@ function add_experiment(exp_dir::AbstractString,
         file["make_args_str"]=make_args_str
     end
 
+    if !(config isa Nothing)
+        cp(config, joinpath(settings_dir, "config_0x"*string(hash, base=16)*splitext(config)[end]))
+    end
+
 end
 
 function add_experiment(exp::Experiment;
@@ -194,7 +207,8 @@ function add_experiment(exp::Experiment;
                    String(exp.module_name),
                    String(exp.func_name),
                    exp.args_iter,
-                   exp.hash;
+                   exp.hash,
+                   exp.config;
                    kwargs...)
 end
 
