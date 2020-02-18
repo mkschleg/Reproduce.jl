@@ -207,7 +207,7 @@ function add_experiment(exp_dir::AbstractString,
     end
 
     if !(config isa Nothing)
-        cp(config, config_file)
+        cp(config, config_file; force=true)
     end
 
 end
