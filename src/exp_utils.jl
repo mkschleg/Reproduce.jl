@@ -29,7 +29,7 @@ struct Experiment{I}
     end
 end
 
-function Experiment(config::AbstractString)
+function Experiment(config::AbstractString, save_path = "")
 
     
     dict = if splitext(config)[end] == ".toml"
@@ -39,7 +39,7 @@ function Experiment(config::AbstractString)
     end
 
     cdict = dict["config"]
-    save_dir = cdict["save_dir"]
+    save_dir = joinpath(save_path, cdict["save_dir"])
     exp_file = cdict["exp_file"]
     exp_module_name = cdict["exp_module_name"]
     exp_func_name = cdict["exp_func_name"]
