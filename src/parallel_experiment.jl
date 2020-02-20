@@ -26,6 +26,7 @@ function job(experiment_file::AbstractString,
              expand_args::Bool=false,
              extra_args = [],
              store_exceptions=true,
+             skip_exceptions=false,
              exception_dir="except",
              job_file_dir="")
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
@@ -47,7 +48,8 @@ function job(experiment_file::AbstractString,
                            extra_args=extra_args,
                            store_exceptions=store_exceptions,
                            exception_dir=exception_dir,
-                           job_file_dir=job_file_dir)
+                           job_file_dir=job_file_dir,
+                           skip_exceptions=skip_exceptions)
     end
 end
 
@@ -61,6 +63,7 @@ function job(experiment_file::AbstractString,
              expand_args::Bool=false,
              extra_args = [],
              store_exceptions=true,
+             skip_exceptions=false,
              exception_dir="except")
     @info "This is a task job! ID is $(task_id)"
     @time task_job(experiment_file, exp_dir, args_iter, task_id;
@@ -72,8 +75,8 @@ function job(experiment_file::AbstractString,
                    exception_dir=exception_dir)
 end
 
-function config_job(config_file::AbstractString, dir::AbstractString, num_runs::Int; kwargs...)
-    cfg = ConfigManager(config_file, dir)
+function config_job(config_file::AbstractString, dir::AbstractString, num_runs::Int; data_manager=Config.HDF5Manager(), kwargs...)
+    cfg = ConfigManager(config_file, dir, data_manager)
     exp_module_name = cfg.config_dict["config"]["exp_module_name"]
     exp_file = cfg.config_dict["config"]["exp_file"]
     exp_func_name = cfg.config_dict["config"]["exp_func_name"]
@@ -156,8 +159,9 @@ function parallel_job(experiment_file::AbstractString,
                       project=".",
                       extra_args=[],
                       store_exceptions=true,
-                      exception_dir="except",
                       verbose=false,
+                      skip_exceptions=false,
+                      exception_dir="except",
                       job_file_dir="")
 
     #######
@@ -228,7 +232,8 @@ function parallel_job(experiment_file::AbstractString,
             else
                 !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
             end
-            if run_exp
+            
+            if run_exp || !skip_exceptions
                 try
                     if expand_args
                         Main.exp_func(args..., extra_args...)
