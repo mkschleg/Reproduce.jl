@@ -166,6 +166,8 @@ function parallel_job(experiment_file::AbstractString,
     #
     ######
 
+
+
     if job_file_dir == ""
         job_file_dir = joinpath(exp_dir, "jobs")
     end
@@ -222,12 +224,10 @@ function parallel_job(experiment_file::AbstractString,
         ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
 
             run_exp = if args isa ConfigManager
-                !(isfile(joinpath(Config.get_logdir(args), "exception.txt")) ||
-                  isfile(Config.get_datafile(args)))
+                !(isfile(joinpath(Config.get_logdir(args), "exception.txt")))
             else
                 !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
             end
-            
             if run_exp
                 try
                     if expand_args
@@ -235,7 +235,6 @@ function parallel_job(experiment_file::AbstractString,
                     else
                         Main.exp_func(args, extra_args...)
                     end
-                    
                 catch ex
                     if isa(ex, InterruptException)
                         throw(InterruptException())
@@ -248,11 +247,13 @@ function parallel_job(experiment_file::AbstractString,
                             exception_file(
                                 joinpath(Config.get_logdir(args), "exception.txt"),
                                 job_id, ex, stacktrace(catch_backtrace()))
+                            exception_file(
+                                joinpath(exception_loc, join(["run_", args["run"], "_param_setting_", args["param_setting"], ".exc"])),
+                                job_id, ex, stacktrace(catch_backtrace()))
                         else
                             exception_file(
                                 joinpath(exception_loc, "job_$(job_id).exc"),
                                 job_id, ex, stacktrace(catch_backtrace()))
-
                         end
                     end
                 end
