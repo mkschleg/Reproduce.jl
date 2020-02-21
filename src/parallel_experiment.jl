@@ -19,60 +19,26 @@ job
 """
 function job(experiment_file::AbstractString,
              exp_dir::AbstractString,
-             args_iter;
-             exp_module_name::Union{String, Symbol}=:Main,
-             exp_func_name::Union{String, Symbol}=:main_experiment,
-             num_workers::Integer=5,
-             expand_args::Bool=false,
-             extra_args = [],
-             store_exceptions=true,
-             skip_exceptions=false,
-             exception_dir="except",
-             job_file_dir="")
+             args_iter; kwargs...)
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
         @time task_job(experiment_file, exp_dir, args_iter, task_id;
-                       exp_module_name=exp_module_name,
-                       exp_func_name=exp_func_name,
-                       expand_args=expand_args,
-                       extra_args=extra_args,
-                       store_exceptions=store_exceptions,
-                       exception_dir=exception_dir)
+                       kwargs...)
     else
         @time parallel_job(experiment_file, exp_dir, args_iter;
-                           exp_module_name=exp_module_name,
-                           exp_func_name=exp_func_name,
-                           num_workers=num_workers,
-                           expand_args=expand_args,
-                           extra_args=extra_args,
-                           store_exceptions=store_exceptions,
-                           exception_dir=exception_dir,
-                           job_file_dir=job_file_dir,
-                           skip_exceptions=skip_exceptions)
+                           kwargs...)
     end
 end
 
 function job(experiment_file::AbstractString,
              exp_dir::AbstractString,
              args_iter,
-             task_id::Integer;
-             exp_module_name::Union{String, Symbol}=:Main,
-             exp_func_name::Union{String, Symbol}=:main_experiment,
-             num_workers::Integer=5,
-             expand_args::Bool=false,
-             extra_args = [],
-             store_exceptions=true,
-             skip_exceptions=false,
-             exception_dir="except")
+             task_id::Int;
+             kwargs...)
     @info "This is a task job! ID is $(task_id)"
     @time task_job(experiment_file, exp_dir, args_iter, task_id;
-                   exp_module_name=exp_module_name,
-                   exp_func_name=exp_func_name,
-                   expand_args=expand_args,
-                   extra_args=extra_args,
-                   store_exceptions=store_exceptions,
-                   exception_dir=exception_dir)
+                   kwargs...)
 end
 
 function config_job(config_file::AbstractString, dir::AbstractString, num_runs::Int; data_manager=Config.HDF5Manager(), kwargs...)
@@ -97,18 +63,19 @@ function config_job(config_file::AbstractString, dir::AbstractString, num_runs::
 end
 
 
-job(exp::Experiment; exception_dir="except", kwargs...) =
+job(exp::Experiment; kwargs...) =
     job(exp.file, exp.dir, exp.args_iter;
         exp_module_name=exp.module_name,
         exp_func_name=exp.func_name,
-        exception_dir="$(exception_dir)/exp_0x$(string(exp.hash, base=16))", kwargs...)
+        exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
+        checkpoint_file="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16)).jld2", kwargs...)
 
-job(exp::Experiment, job_id::Integer; exception_dir="except", kwargs...) =
+job(exp::Experiment, job_id::Integer; kwargs...) =
     job(exp.file, exp.dir, exp.args_iter, job_id;
         exp_module_name=exp.module_name,
         exp_func_name=exp.func_name,
-        exception_dir="$(exception_dir)/exp_0x$(string(exp.hash, base=16))", kwargs...)
-
+        exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
+        checkpoint_file="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16)).jld2", kwargs...)
 
 function create_procs(num_workers, project, job_file_dir)
     pids = Array{Int64, 1}()
@@ -141,6 +108,53 @@ function create_procs(num_workers, project, job_file_dir)
     return pids
 end
 
+function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
+                         expand_args=false,
+                         verbose=false,
+                         store_exceptions=true,
+                         skip_exceptions=false)
+
+    run_exp = if args isa ConfigManager
+        !(isfile(joinpath(Config.get_logdir(args), "exception.txt")))
+    else
+        !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
+    end
+
+    if run_exp || !skip_exceptions
+        try
+            if expand_args
+                exp_func(args..., extra_args...)
+            else
+                exp_func(args, extra_args...)
+            end
+        catch ex
+            if isa(ex, InterruptException)
+                throw(InterruptException())
+            end
+            if verbose
+                @warn "Exception encountered for job: $(job_id)"
+            end
+            if store_exceptions
+                if args isa ConfigManager
+                    exception_file(
+                        joinpath(Config.get_logdir(args), "exception.txt"),
+                        job_id, ex, stacktrace(catch_backtrace()))
+                    exception_file(
+                        joinpath(exception_loc, join(["run_", args["run"], "_param_setting_", args["param_setting"], ".exc"])),
+                        job_id, ex, stacktrace(catch_backtrace()))
+                else
+                    exception_file(
+                        joinpath(exception_loc, "job_$(job_id).exc"),
+                        job_id, ex, stacktrace(catch_backtrace()))
+                end
+            end
+        end
+    elseif verbose
+        @warn  "Not running job for $(job_id)"
+    end
+
+end
+
 
 
 """
@@ -154,15 +168,16 @@ function parallel_job(experiment_file::AbstractString,
                       args_iter;
                       exp_module_name::Union{String, Symbol}=:Main,
                       exp_func_name::Union{String, Symbol}=:main_experiment,
-                      num_workers=1,
-                      expand_args=false,
+                      num_workers=2,
                       project=".",
                       extra_args=[],
+                      exception_dir="except",
+                      job_file_dir="",
+                      checkpoint_file="",
                       store_exceptions=true,
                       verbose=false,
                       skip_exceptions=false,
-                      exception_dir="except",
-                      job_file_dir="")
+                      expand_args=false)
 
     #######
     #
@@ -170,16 +185,43 @@ function parallel_job(experiment_file::AbstractString,
     #
     ######
 
-
-
     if job_file_dir == ""
         job_file_dir = joinpath(exp_dir, "jobs")
+    end
+
+    if exception_dir == "except"
+        exception_dir = joinpath(exp_dir, exception_dir)
+    end
+    if store_exceptions && !isdir(exception_dir)
+        mkpath(exception_dir)
+    end
+
+    checkpointing = true
+    if checkpoint_file == ""
+        # checkpoint_file = joinpath(exp_dir, "checkpoints.jld2")
+        checkpointing = false
     end
 
     pids = create_procs(num_workers, project, job_file_dir)
     println(nworkers(), " ", pids)
 
     n = length(args_iter)
+
+    finished_jobs_arr = fill(false, n)
+    if checkpointing
+        if !isdir(dirname(checkpoint_file))
+            mkpath(dirname(checkpoint_file))
+        end
+        if isfile(checkpoint_file)
+            JLD2.@load checkpoint_file finished_jobs_arr
+        else
+            JLD2.@save checkpoint_file finished_jobs_arr
+        end
+    end
+    @show finished_jobs_arr
+    done_jobs = finished_jobs_arr
+
+    @info "Number of Jobs: $(n)"
 
     #########
     #
@@ -188,7 +230,6 @@ function parallel_job(experiment_file::AbstractString,
     ########
 
     job_id_channel = RemoteChannel(()->Channel{Int}(length(args_iter)), 1)
-
     done_channel = RemoteChannel(()->Channel{Bool}(1), 1)
 
     try
@@ -196,90 +237,63 @@ function parallel_job(experiment_file::AbstractString,
         mod_str = string(exp_module_name)
         func_str = string(exp_func_name)
 
-        try
-            @everywhere const global exp_file=$experiment_file
-            @everywhere const global expand_args=$expand_args
-            @everywhere const global extra_args=$extra_args
-            @everywhere const global store_exceptions=$store_exceptions
-            @everywhere const global exception_loc = joinpath($exp_dir, $exception_dir)
+        @everywhere const global exp_file=$experiment_file
+        @everywhere const global expand_args=$expand_args
+        @everywhere const global extra_args=$extra_args
+        @everywhere const global store_exceptions=$store_exceptions
+        @everywhere const global exception_dir=$exception_dir
+        @everywhere const global checkpoint_file = $checkpoint_file
+        @everywhere const global checkpointing=$checkpointing
+        @everywhere const global done_jobs=$finished_jobs_arr
 
-            @everywhere begin
-                eval(:(using Reproduce))
-                eval(:(using Distributed))
-                eval(:(using SharedArrays))
-                include(exp_file)
-                @info "$(exp_file) included on process $(myid())"
-                mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
-                const global exp_func = getfield(mod, Symbol($func_str))
-                experiment(args) = exp_func(args)
-                @info "Experiment built on process $(myid())"
-            end
-        catch ex
-            println(ex)
+        @everywhere begin
+            eval(:(using Reproduce))
+            eval(:(using Distributed))
+            eval(:(using SharedArrays))
+            include(exp_file)
+            @info "$(exp_file) included on process $(myid())"
+            mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
+            const global exp_func = getfield(mod, Symbol($func_str))
+            experiment(args) = exp_func(args)
+            @info "Experiment built on process $(myid())"
         end
 
-        @info "Number of Jobs: $(n)"
-        exception_loc = joinpath(exp_dir, exception_dir)
-        if store_exceptions && !isdir(exception_loc)
-            mkpath(exception_loc)
-        end
-            
-           
         ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
-
-            run_exp = if args isa ConfigManager
-                !(isfile(joinpath(Config.get_logdir(args), "exception.txt")))
-            else
-                !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
-            end
-            
-            if run_exp || !skip_exceptions
-                try
-                    if expand_args
-                        Main.exp_func(args..., extra_args...)
-                    else
-                        Main.exp_func(args, extra_args...)
+            if !checkpointing || !done_jobs[job_id]
+                _run_experiment(Main.exp_func, job_id, args, extra_args, exception_dir;
+                                expand_args=expand_args,
+                                verbose=verbose,
+                                store_exceptions=store_exceptions,
+                                skip_exceptions=skip_exceptions)
+                Distributed.put!(job_id_channel, job_id)
+                if checkpointing && myid() == 2
+                    # Deal w/ job_id_channel...
+                    JLD2.@load checkpoint_file finished_jobs_arr
+                    while isready(job_id_channel)
+                        new_job_id = take!(job_id_channel)
+                        finished_jobs_arr[new_job_id] = true
                     end
-                catch ex
-                    if isa(ex, InterruptException)
-                        throw(InterruptException())
-                    end
-                    if verbose
-                        @warn "Exception encountered for job: $(job_id)"
-                    end
-                    if store_exceptions
-                        if args isa ConfigManager
-                            exception_file(
-                                joinpath(Config.get_logdir(args), "exception.txt"),
-                                job_id, ex, stacktrace(catch_backtrace()))
-                            exception_file(
-                                joinpath(exception_loc, join(["run_", args["run"], "_param_setting_", args["param_setting"], ".exc"])),
-                                job_id, ex, stacktrace(catch_backtrace()))
-                        else
-                            exception_file(
-                                joinpath(exception_loc, "job_$(job_id).exc"),
-                                job_id, ex, stacktrace(catch_backtrace()))
-                        end
-                    end
+                    JLD2.@save checkpoint_file finished_jobs_arr
                 end
-            elseif verbose
-                @warn  "Not running job for $(job_id)"
             end
-            Distributed.put!(job_id_channel, job_id)
         end
 
+        if checkpointing
+            JLD2.@load checkpoint_file finished_jobs_arr
+            return findall((x)->x==false, finished_jobs_arr)
+        else
+            finished_jobs_bool = fill(false, n)
+            while isready(job_id_channel)
+                job_id = take!(job_id_channel)
+                finished_jobs_bool[job_id] = true
+            end
+            return findall((x)->x==false, finished_jobs_bool)
+        end
+        
     catch ex
-        println(ex)
         Distributed.interrupt()
+        rethrow()
     end
-
-    finished_jobs_bool = fill(false, n)
-    while isready(job_id_channel)
-        job_id = take!(job_id_channel)
-        finished_jobs_bool[job_id] = true
-    end
-    return findall((x)->x==false, finished_jobs_bool)
-
 end
 
 
@@ -303,32 +317,31 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
     end
 
     args = collect(args_iter)[task_id][2]
-    @sync @async begin
-        try
-            if expand_args
-                Main.exp_func(args..., extra_args...)
-            else
-                Main.exp_func(args, extra_args...)
-            end
-        catch ex
-            @warn "Exception encountered for job: $(task_id)"
-            if store_exceptions
-                exception_loc = joinpath(exp_dir, exception_dir)
-                if !isdir(exception_loc)
-                    try
-                        mkpath(exception_loc)
-                    catch
-                        sleep(1)
-                    end
-                end
-                exception_file(
-                    joinpath(exception_loc, "job_$(task_id).exc"),
-                    task_id, ex, stacktrace(catch_backtrace()))
-                return false
-            end
-            throw(ex)
+    try
+        if expand_args
+            Main.exp_func(args..., extra_args...)
+        else
+            Main.exp_func(args, extra_args...)
         end
+    catch ex
+        @warn "Exception encountered for job: $(task_id)"
+        if store_exceptions
+            exception_loc = joinpath(exp_dir, exception_dir)
+            if !isdir(exception_loc)
+                try
+                    mkpath(exception_loc)
+                catch
+                    sleep(1)
+                end
+            end
+            exception_file(
+                joinpath(exception_loc, "job_$(task_id).exc"),
+                task_id, ex, stacktrace(catch_backtrace()))
+            return false
+        end
+        throw(ex)
     end
+
     return true
 end
 
