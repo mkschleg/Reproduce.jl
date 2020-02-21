@@ -38,6 +38,7 @@ function main()
     config_job(parsed["config_file"],
                save_loc,
                parsed["runs"];
+               data_manager = Config.BSONManager(),
                num_workers=parsed["numworkers"],
                extra_args=[save_loc])
 end
