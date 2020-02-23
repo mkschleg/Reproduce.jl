@@ -1,0 +1,27 @@
+#+title: Experimental Notes for examples/test_loc
+
+TL;DR: hello tldr
+
+* <2020-02-23 Sun 11:40:30>
+
+	Git-head: c575559b22237bbb2184833cd9e1a7408347e4ec
+	Git-branch: develop_parallel
+	experiment file: examples/experiment.jl
+	experiment module: Main
+	experiment function: main_experiment
+
+	settings file: settings_0xbf8dcd93f5ef399e.jld2
+	config file: config_0xbf8dcd93f5ef399e.toml
+
+	#+BEGIN_src julia
+	dict = Dict{String,Any}("opt2" => [5, 6, 7, 8],"opt1" => 1:50)
+	arg_list = ["opt2", "opt1"]
+	static_arg = Dict{String,Any}("steps" => 102902,"save_dir" => "examples/test_loc/data")
+
+	#Make Arguments
+	nothing
+	#+END_src
+
+	Post Experiment: 
+	Canceled Jobs: Int64[]
+	Ended: <2020-02-23 Sun 11:40:54>

@@ -38,6 +38,23 @@ function main_experiment(parsed::Dict, saveloc = nothing)
     return j
 end
 
+# function main_experiment(parsed::Dict)
+#     if saveloc isa Nothing
+#         create_info!(parsed, parsed["save_dir"])
+#     else
+#         create_info!(parsed, saveloc)
+#     end
+#     j = 0
+#     if parsed["opt1"] == 2
+#         throw("Oh No!!!")
+#     end
+
+#     @save joinpath(parsed["_SAVE"], "data.jld2") parsed
+
+#     return j
+# end
+
+
 # When using Config.jl as a config manager.
 function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
     j = 0

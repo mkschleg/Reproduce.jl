@@ -1,0 +1,15 @@
+
+
+[config]
+save_dir="test_loc"
+exp_file="examples/experiment.jl"
+exp_module_name = "Main"
+exp_func_name = "main_experiment"
+arg_iter_type = "iter"
+
+[static_args]
+steps=102902
+
+[sweep_args]
+opt2 = [5,6,7,8]
+opt1 = "1:50"

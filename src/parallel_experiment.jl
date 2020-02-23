@@ -127,6 +127,7 @@ function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
             else
                 exp_func(args, extra_args...)
             end
+            return true
         catch ex
             if isa(ex, InterruptException)
                 throw(InterruptException())
@@ -148,10 +149,13 @@ function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
                         job_id, ex, stacktrace(catch_backtrace()))
                 end
             end
+            return false
         end
     elseif verbose
         @warn  "Not running job for $(job_id)"
     end
+
+    return true
 
 end
 
@@ -347,14 +351,21 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
     
     job_id = task_id
     args = collect(args_iter)[task_id][2]
-    _run_experiment(Main.exp_func, job_id, args, extra_args, exception_dir;
-                    expand_args=expand_args,
-                    verbose=verbose,
-                    store_exceptions=store_exceptions,
-                    skip_exceptions=skip_exceptions)
+    ret = @sync @async begin
+        _run_experiment(Main.exp_func, job_id, args, extra_args, exception_dir;
+                        expand_args=expand_args,
+                        verbose=verbose,
+                        store_exceptions=store_exceptions,
+                        skip_exceptions=skip_exceptions)
+    end
 
     if checkpointing
         rm(joinpath(checkpoint_folder, "job_$(task_id)"))
+        if ret == false
+            open(joinpath(checkpoint_folder, "job_$(task_id)"), "w") do f
+                write(f, "exception while running job! Check exceptions for more details.")
+            end
+        end
     end
     
     return true
