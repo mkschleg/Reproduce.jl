@@ -1,5 +1,5 @@
 # get Pkg version of toml.
-using Pkg.TOML
+
 
 struct ArgIterator{A, SA} <: AbstractArgIter
     dict::Dict
@@ -53,11 +53,7 @@ end
 function make_arguments(iter::ArgIterator{A, SA}, state) where {A, SA<:Dict}
     d = Dict{String, Any}()
     for (arg_idx, arg) in enumerate(iter.arg_list)
-        if typeof(iter.dict[arg][state[2][arg_idx]]) <: Tuple
-            d[arg] = iter.dict[arg][state[2][arg_idx]]
-        else
-            d[arg] = iter.dict[arg][state[2][arg_idx]]
-        end
+        d[arg] = iter.dict[arg][state[2][arg_idx]]
     end
     merge!(d, iter.static_args)
     d

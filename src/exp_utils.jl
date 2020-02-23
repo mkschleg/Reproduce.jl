@@ -3,7 +3,10 @@ using CodeTracking
 using Git
 using JLD2
 using Logging
+
+# Config files
 using Pkg.TOML
+using JSON
 
 """
     Experiment
@@ -63,6 +66,7 @@ function Experiment(config::AbstractString, save_path = "")
                     arg_list=arg_list)
     elseif iter_type == "looper"
         throw("Looper w/ Toml Config Not Implemented Yet")
+        
     else
         throw("$(iter_type) not supported.")
     end

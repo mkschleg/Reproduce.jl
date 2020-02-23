@@ -1,17 +1,35 @@
 
-
-struct ArgLooper  <: AbstractArgIter
-    dict_list::Vector{Vector{String}}
-    runs_iter::AbstractArray
-    stable_arg::Vector{String}
+struct ArgLooper{SA, SB, RI}  <: AbstractArgIter
+    dict_list::Vector{SA}
+    runs_iter::RI
+    stable_arg::SB
     done::Bool
     run_name::String
-    ArgLooper(list, stable_arg, runs_iter, run_name="--run") = new(list, runs_iter, stable_arg, false, run_name)
 end
 
-function make_arguments(iter::ArgLooper, state)
+function ArgLooper(dict_list::Vector{<:Dict}, stable_arg::Dict, runs_iter, run_param)
+    ArgLooper(dict_list, runs_iter, stable_arg, false, run_param)
+end
+
+function ArgLooper(str_list::Vector{Vector{String}}, stable_arg::Vector{String}, runs_iter, run_param)
+    @warn "Arg Looper w/ Arg Parse is depricated in favor of passing dictionaries around."
+    ArgLooper(str_list, runs_iter, stable_arg, false, run_param)
+end
+
+
+ArgLooper(list, stable_arg, runs_iter, run_name="--run") =
+    ArgLooper(list, runs_iter, stable_arg, false, run_name)
+
+function make_arguments(iter::ArgLooper{SA, RI}, state) where {SA<:Vector{String}, RI}
     arg_list = Vector{String}()
     arg_list = [iter.dict_list[state[2][1]]; [iter.run_name, string(iter.runs_iter[state[2][2]])]; iter.stable_arg]
+    return arg_list
+end
+
+function make_arguments(iter::ArgLooper{SA, RI}, state) where {SA<:Dict, RI}
+    arg_list = Vector{String}()
+    arg_list = merge(iter.dict_list[state[2][1]], iter.stable_arg)
+    arg_list[iter.run_name] = iter.runs_iter[state[2][2]]
     return arg_list
 end
 
