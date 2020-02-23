@@ -48,11 +48,13 @@ function Experiment(config::AbstractString, save_path = "")
     exp_func_name = cdict["exp_func_name"]
 
     iter_type = cdict["arg_iter_type"]
-    arg_list = get(cdict, "arg_list_order", nothing)
 
-    @assert arg_list isa Nothing || all(sort(arg_list) .== sort(collect(keys(dict["sweep_args"]))))
 
     args = if iter_type == "iter"
+        arg_list = get(cdict, "arg_list_order", nothing)
+
+        @assert arg_list isa Nothing || all(sort(arg_list) .== sort(collect(keys(dict["sweep_args"]))))
+        
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
         static_args_dict["save_dir"] = joinpath(save_dir, "data")
         sweep_args_dict = dict["sweep_args"]
@@ -61,12 +63,16 @@ function Experiment(config::AbstractString, save_path = "")
                 sweep_args_dict[key] = eval(Meta.parse(sweep_args_dict[key]))
             end
         end
-        ArgIterator(dict["sweep_args"],
+        ArgIterator(sweep_args_dict,
                     static_args_dict,
                     arg_list=arg_list)
     elseif iter_type == "looper"
-        throw("Looper w/ Toml Config Not Implemented Yet")
-        
+        static_args_dict = get(dict, "static_args", Dict{String, Any}())
+        static_args_dict["save_dir"] = joinnpath(save_dir, "data")
+        args_dict_list = [dict["loop_args"][k] for k ∈ keys(dict["loop_args"])]
+        run_param = cdict["run_param"]
+        num_runs = cdict["num_runs"]
+        ArgLooper(args_dict_list, static_args_dict, 1:num_runs, run_param)
     else
         throw("$(iter_type) not supported.")
     end
