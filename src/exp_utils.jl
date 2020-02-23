@@ -86,14 +86,31 @@ function Experiment(config::AbstractString, save_path = "")
 end
 
 function _safe_mkdir(exp_dir)
-    try
-        mkdir(exp_dir)
-    catch ex
-        @info "Somebody else created directory... Waiting"
-        if isa(ex, SystemError) && ex.errnum == 17
-            sleep(0.1) # Other Process Made folder. Waiting...
-        else
-            throw(ex)
+    if !isdir(exp_dir)
+        try
+            mkdir(exp_dir)
+        catch ex
+            @info "Somebody else created directory... Waiting"
+            if isa(ex, SystemError) && ex.errnum == 17
+                sleep(0.1) # Other Process Made folder. Waiting...
+            else
+                throw(ex)
+            end
+        end
+    end
+end
+
+function _safe_mkpath(exp_dir)
+    if !isdir(exp_dir)
+        try
+            mkpath(exp_dir)
+        catch ex
+            @info "Somebody else created directory... Waiting"
+            if isa(ex, SystemError) && ex.errnum == 17
+                sleep(0.1) # Other Process Made folder. Waiting...
+            else
+                throw(ex)
+            end
         end
     end
 end
