@@ -68,14 +68,14 @@ job(exp::Experiment; kwargs...) =
         exp_module_name=exp.module_name,
         exp_func_name=exp.func_name,
         exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
-        checkpoint_file="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16)).jld2", kwargs...)
+        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))", kwargs...)
 
 job(exp::Experiment, job_id::Integer; kwargs...) =
     job(exp.file, exp.dir, exp.args_iter, job_id;
         exp_module_name=exp.module_name,
         exp_func_name=exp.func_name,
         exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
-        checkpoint_folder="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))/", kwargs...)
+        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))", kwargs...)
 
 function create_procs(num_workers, project, job_file_dir)
     pids = Array{Int64, 1}()
@@ -173,7 +173,7 @@ function parallel_job(experiment_file::AbstractString,
                       extra_args=[],
                       exception_dir="except",
                       job_file_dir="",
-                      checkpoint_file="",
+                      checkpoint_name="",
                       store_exceptions=true,
                       verbose=false,
                       skip_exceptions=false,
@@ -197,9 +197,14 @@ function parallel_job(experiment_file::AbstractString,
     end
 
     checkpointing = true
-    if checkpoint_file == ""
-        # checkpoint_file = joinpath(exp_dir, "checkpoints.jld2")
+    checkpoint_file = checkpoint_name
+    if checkpoint_name == ""
+        # checkpoint_name = joinpath(exp_dir, "checkpoints.jld2")
         checkpointing = false
+    else
+        if splitext(checkpoint_file)[end] != ".jld2"
+            checkpoint_file * ".jld2"
+        end
     end
 
     pids = create_procs(num_workers, project, job_file_dir)
@@ -305,7 +310,7 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
                   project=".",
                   extra_args=[],
                   exception_dir="except",
-                  checkpoint_folder="",
+                  checkpoint_name="",
                   store_exceptions=true,
                   verbose=false,
                   skip_exceptions=false,
@@ -320,8 +325,9 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
     end
 
     checkpointing = false
+    checkpoint_folder = checkpoint_name
     if checkpoint_folder != ""
-        # checkpoint_file = joinpath(exp_dir, "checkpoints.jld2")
+        # checkpoint_name = joinpath(exp_dir, "checkpoints.jld2")
         # @warn "Checkpointing not available for task jobs."
         _safe_mkpath(checkpoint_folder)
         checkpointing = true
