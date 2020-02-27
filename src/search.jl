@@ -1,7 +1,8 @@
 
 
 using Glob
-using FileIO, JLD2
+import FileIO
+using JLD2
 
 export ItemCollection, search, details
 
@@ -29,7 +30,7 @@ end
     ItemCollection
 A collection of items. Mostly helpful, but not really used yet.
 """
-mutable struct ItemCollection
+struct ItemCollection
     items::Array{Item,1}
 end
 
@@ -42,6 +43,18 @@ function ItemCollection(dir::AbstractString; settings_file="settings.jld2")
 
     return ItemCollection(items)
 end
+
+
+# Iterator
+Base.eltype(::Type{ItemCollection}) = Item
+Base.length(ic::ItemCollection) = length(ic.items)
+Base.getindex(ic::ItemCollection, idx) = ic.items[idx]
+Base.firstindex(ic::ItemCollection, idx) = firstindex(ic.items)
+Base.lastindex(ic::ItemCollection, idx) = lastindex(ic.items)
+
+Base.iterate(ic::ItemCollection, state=1) = state > length(ic) ? nothing : (ic[state], state + 1)
+
+
 
 """
     search
@@ -61,7 +74,7 @@ function search(itemCollection::ItemCollection, search_dict)
             push!(save_dirs, item.parsed_args["_SAVE"])
         end
     end
-    return hash_codes, save_dirs, found_items
+    return ItemCollection(found_items)
 
 end
 
@@ -84,7 +97,6 @@ end
 
 details(dir::AbstractString; settings_file="settings.jld2") =
     details(ItemCollection(dir; settings_file=settings_file))
-
 
 import Base.-
 """
@@ -110,8 +122,9 @@ end
 get difference of the list of items.
 """
 function Base.diff(items::Array{Reproduce.Item, 1};
-              exclude_keys::Union{Array{String,1}, Array{Symbol,1}} = Array{String, 1}(),
-              exclude_parse_values::Bool=true)
+                   exclude_keys::Union{Array{String,1}, Array{Symbol,1}} = Array{String, 1}(),
+                   exclude_parse_values::Bool=true)
+
     kt = keytype(items[1].parsed_args)
     exclude_keys = kt.(exclude_keys)
     if exclude_parse_values == true

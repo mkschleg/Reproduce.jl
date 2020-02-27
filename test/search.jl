@@ -56,12 +56,12 @@ end
 
 function search_test()
     search_dict = Dict("a"=>1)
-    hash_codes, save_dirs, found_items = search(TEST_DIR, search_dict)
+    ic = search(TEST_DIR, search_dict)
     tests = fill(false, 1, 5)
-    for item in found_items
+    for item in ic
         tests[1, item.parsed_args["b"]] = true
     end
-    return all(tests) && length(hash_codes) == 5
+    return all(tests)
 end
 
 function diff_test()

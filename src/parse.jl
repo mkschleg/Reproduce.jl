@@ -1,7 +1,7 @@
 using Logging
 using Reexport
 
-import Git, FileIO, JLD2
+import Git, JLD2
 @reexport using ArgParse
 
 
