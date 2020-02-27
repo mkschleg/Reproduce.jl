@@ -207,7 +207,7 @@ function parallel_job(experiment_file::AbstractString,
         checkpointing = false
     else
         if splitext(checkpoint_file)[end] != ".jld2"
-            checkpoint_file * ".jld2"
+            checkpoint_file = checkpoint_file * ".jld2"
         end
     end
 

@@ -16,6 +16,29 @@ include("parse.jl")
 export ItemCollection, search, details
 include("search.jl")
 
+# Saving utils in Config.jl are really nice. Just reusing and pirating a new type until I figure out what FileIO can and can't do.
+export HDF5Manager, BSONManager, JLD2Manager, save, save!, load
+
+# Adding JLD2 manager:
+import JLD2
+
+Base.@kwdef struct JLD2Manager <: Config.DataManager
+    replace = true
+end
+
+Config.extension(manager::JLD2Manager) = ".jld2"
+
+Config.save(manager::JLD2Manager, path::AbstractString, results) = JLD2.@save path results
+function Config.save!(manager::JLD2Manager, path::AbstractString, results)
+    if manager.replace
+        JLD2.@save path results
+    else
+        @warn "There is data already here, and I was told not to replace. Saving to -> temp.jld2"
+        JLD2.@save joinpath(dirname(path), "temp.jld2") results
+    end
+end
+
+
 abstract type AbstractArgIter end
 
 export ArgIterator, ArgLooper
