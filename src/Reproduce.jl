@@ -22,9 +22,11 @@ export HDF5Manager, BSONManager, JLD2Manager, save, save!, load
 # Adding JLD2 manager:
 import JLD2
 
-Base.@kwdef struct JLD2Manager <: Config.DataManager
-    replace = true
+struct JLD2Manager <: Config.DataManager
+    replace
+    JLD2Manager(replace=true) = new(replace)
 end
+
 
 Config.extension(manager::JLD2Manager) = ".jld2"
 

@@ -16,7 +16,7 @@ const config_file = "./examples/arg_iter_config.toml"
 
 function test_experiment()
 
-    experiment = Experiment(config_file, "examples")
+    experiment = Experiment(config_file)
 
     create_experiment_dir(experiment; tldr="hello tldr")
     add_experiment(experiment; settings_dir="settings")

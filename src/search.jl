@@ -1,7 +1,8 @@
 
 
 using Glob
-using FileIO, JLD2
+import FileIO
+using JLD2
 
 export ItemCollection, search, details
 
