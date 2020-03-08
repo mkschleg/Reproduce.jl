@@ -11,6 +11,7 @@ export
     get_save_dir,
     get_hash,
     get_git_info
+
 include("parse.jl")
 
 export ItemCollection, search, details
@@ -26,7 +27,6 @@ struct JLD2Manager <: Config.DataManager
     replace
     JLD2Manager(replace=true) = new(replace)
 end
-
 
 Config.extension(manager::JLD2Manager) = ".jld2"
 
@@ -48,10 +48,9 @@ include("args_iter.jl")
 include("args_looper.jl")
 
 export Experiment, create_experiment_dir, add_experiment, post_experiment
-include("exp_utils.jl")
+include("experiment.jl")
 
 export job, config_job
-include("parallel_experiment.jl")
-# greeting() = println("Hello World!")
+include("parallel.jl")
 
 end # module

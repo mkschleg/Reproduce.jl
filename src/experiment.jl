@@ -9,36 +9,60 @@ using Pkg.TOML
 using JSON
 
 """
-    Experiment
+    Experiment(dir, file, module_name, func_name, args_iter, config=nothing; modify_save_path=true)
 
 This is a struct which encapsulates the idea of an experiment.
+# Arguments
+- `dir`: The directory associated w/ this experiment
+- `file`: The path to the file containing the experiment module
+- `module_name`: The module encapsulating your experiment (either a string or symbol)
+- `func_name`: The function inside the module which runs your experiment
+- `args_iter`: The settings your want to iterate over. This can be any iterator which returns `(job_id, params)`
+- `config`: [Optional] The path of the config file your experiment was built from. See [`Experiment(config_path, save_path="")`](@ref)
+- `modify_save_path`: If true and you are using ArgIterator or ArgLooper the arg_iter added to the experiment will have a new static_arg "save_dir" added.
 
 """
 struct Experiment{I}
-    dir::AbstractString
-    file::AbstractString
+    dir::String
+    file::String
     module_name::Symbol
     func_name::Symbol
     args_iter::I
     hash::UInt64
     config::Union{String, Nothing}
-    function Experiment(dir::AbstractString,
-                        file::AbstractString,
-                        module_name::Union{String, Symbol},
-                        func_name::Union{String, Symbol},
-                        args_iter,
-                        config=nothing)
-        new{typeof(args_iter)}(dir, file, Symbol(module_name), Symbol(func_name), args_iter, hash(string(args_iter)), config)
-    end
 end
 
-function Experiment(config::AbstractString, save_path = "")
+function Experiment(dir, file, module_name, func_name, args_iter, config=nothing; modify_save_path=true)
+    arg_iter = if modify_save
+        cp_arg_iter = copy(arg_iter)
+        if arg_iter isa ArgIterator
+            cp_arg_iter.static_args["save_dir"] = joinpath(dir, "data")
+        elseif arg_iter isa ArgLooper
+            cp_arg_iter.static_args["save_dir"] = joinpath(dir, "data")
+        end
+        cp_arg_iter
+    else
+        arg_iter
+    end
 
-    
-    dict = if splitext(config)[end] == ".toml"
-        TOML.parsefile(config)
-    elseif splitext(config)[end] == ".json"
-        JSON.Parser.parsefile(config)
+    Experiment(dir, file, Symbol(module_name), Symbol(func_name), args_iter, hash(string(args_iter)), config)
+end
+
+
+"""
+    Experiment(config_path, save_path="")
+
+Build and experiment from either a toml file or a json.
+"""
+function Experiment(config_path, save_path="")
+
+    ext = splitext(config_path)[end]
+    dict = if ext == ".toml"
+        TOML.parsefile(config_path)
+    elseif ext == ".json"
+        JSON.Parser.parsefile(config_path)
+    else
+        throw(ErrorException("Experiment currently doesn't support $(ext) files."))
     end
 
     cdict = dict["config"]
@@ -115,14 +139,35 @@ function _safe_mkpath(exp_dir)
     end
 end
 
-"""
-    create_experiment_dir(exp_dir::AbstractString; org_file=true, replace=false, tldr="")
 
-This creates an experiment directory and sets up a notes file.
 
 """
-function create_experiment_dir(exp_dir::AbstractString;
-                               org_file=true,
+    pre_experiment(exp::Experiment; kwargs...)
+
+Experiment setup phase. This helps deal with all the setup that needs to occur to setup an experiment folder.
+"""
+
+function pre_experiment(exp::Experiment; kwargs...)
+    create_experiment_dir(exp; kwargs...)
+    add_experiment(exp)
+end
+
+
+
+"""
+    create_experiment_dir(exp_dir; org_file=false, replace=false, tldr="")
+    create_experiment_dir(exp::Experiment; kwargs...)
+
+This creates an experiment directory and sets up a notes file (if org_file is true). It is recommended to use [`pre_experiment(exp::Experiment; kwargs...)`](@ref).
+
+# Arguments
+- `org_file=false`: Indicator on whether to create an org file w/ notes on the job (experimental).
+- `replace=false`: If true the directory will be deleted. This is not recommended when calling create_experiment_dir from multiple jobs.
+- `tldr=""`: A TLDR which will be put into the org file.
+
+"""
+function create_experiment_dir(exp_dir;
+                               org_file=false,
                                replace=false,
                                tldr="")
 
@@ -170,18 +215,23 @@ function create_experiment_dir(exp::Experiment;
     return
 end
 
+"""
+    add_experiment(exp_dir, experiment_file, exp_module_name, exp_func_name, args_iter, hash, config)
+    add_experiment(exp::Experiment)
 
-function add_experiment(exp_dir::AbstractString,
-                        experiment_file::AbstractString,
-                        exp_module_name::AbstractString,
-                        exp_func_name::AbstractString,
-                        args_iter::AbstractArgIter,
+Set up details of experiment in `exp_dir`. This includes saving settings and config files, etc...
+It is recommended to use [`pre_experiment(exp::Experiment; kwargs...)`](@ref).
+"""
+function add_experiment(exp_dir,
+                        experiment_file,
+                        exp_module_name,
+                        exp_func_name,
+                        args_iter,
                         hash::UInt64,
-                        config=nothing;
-                        settings_dir="", add_all_tasks=false)
+                        config=nothing)
 
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-        if parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) != 1 && !add_all_tasks
+        if parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) != 1
             job_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
             @info "Told to not add all experiments... job_id : $(job_id) $(job_id == 1)"
             return
@@ -190,6 +240,7 @@ function add_experiment(exp_dir::AbstractString,
 
     @info "Adding Experiment to $(exp_dir)"
 
+    settings_dir = "settings"
     settings_dir = joinpath(exp_dir, settings_dir)
     _safe_mkdir(settings_dir)
 
@@ -209,23 +260,25 @@ function add_experiment(exp_dir::AbstractString,
         make_args_str, line1 = definition(String, m)
     end
 
-    open(joinpath(exp_dir, "notes.org"), "a") do f
-        exp_str = "* " * date_str * "\n\n" *
-            tab*"Git-head: $(Git.head())\n" *
-            tab*"Git-branch: $(Git.branch())\n" *
-            tab*"experiment file: $(experiment_file)\n" *
-            tab*"experiment module: $(string(exp_module_name))\n" *
-            tab*"experiment function: $(string(exp_func_name))\n\n" *
-            tab*"settings file: $(basename(settings_file))\n" *
-            (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
-            tab*"#+BEGIN_src julia\n" *
-            (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
-            (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
-            tab*"static_arg = $(args_iter.static_args)\n\n" *
-            tab*"#Make Arguments\n" *
-            tab*make_args_str*"\n" *
-            tab*"#+END_src\n\n"
-        write(f, exp_str)
+    if isfile(joinpath(exp_dir, "notes.org"))
+        open(joinpath(exp_dir, "notes.org"), "a") do f
+            exp_str = "* " * date_str * "\n\n" *
+                tab*"Git-head: $(Git.head())\n" *
+                tab*"Git-branch: $(Git.branch())\n" *
+                tab*"experiment file: $(experiment_file)\n" *
+                tab*"experiment module: $(string(exp_module_name))\n" *
+                tab*"experiment function: $(string(exp_func_name))\n\n" *
+                tab*"settings file: $(basename(settings_file))\n" *
+                (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
+                tab*"#+BEGIN_src julia\n" *
+                (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
+                (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
+                tab*"static_arg = $(args_iter.static_args)\n\n" *
+                tab*"# Make Arguments\n" *
+                tab*make_args_str*"\n" *
+                tab*"#+END_src\n\n"
+            write(f, exp_str)
+        end
     end
 
     jldopen(settings_file, "w") do file
@@ -239,17 +292,16 @@ function add_experiment(exp_dir::AbstractString,
 
 end
 
-function add_experiment(exp::Experiment;
-                        kwargs...)
+function add_experiment(exp::Experiment)
     add_experiment(exp.dir,
                    exp.file,
                    String(exp.module_name),
                    String(exp.func_name),
                    exp.args_iter,
                    exp.hash,
-                   exp.config;
-                   kwargs...)
+                   exp.config)
 end
+
 
 function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1})
 
