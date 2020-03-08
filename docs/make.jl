@@ -24,3 +24,9 @@ makedocs(
 #=deploydocs(
     repo = "<repository url>"
 )=#
+
+deploydocs(
+    repo = "github.com/mkschleg/Reproduce.jl.git",
+    devbranch = "master",
+    versions = ["stable" => "v^"]
+)
