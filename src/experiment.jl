@@ -144,7 +144,6 @@ end
 
 Experiment setup phase. This helps deal with all the setup that needs to occur to setup an experiment folder.
 """
-
 function pre_experiment(exp::Experiment; kwargs...)
     create_experiment_dir(exp; kwargs...)
     add_experiment(exp)
