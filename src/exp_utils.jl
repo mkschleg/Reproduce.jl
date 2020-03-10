@@ -220,8 +220,7 @@ function add_experiment(exp_dir::AbstractString,
             (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
             tab*"#+BEGIN_src julia\n" *
             (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
-            (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
-            tab*"static_arg = $(args_iter.static_args)\n\n" *
+            (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") * "\n" *
             tab*"#Make Arguments\n" *
             tab*make_args_str*"\n" *
             tab*"#+END_src\n\n"
