@@ -18,39 +18,28 @@ const exp_file = "examples/experiment.jl"
 const exp_module_name = :Main
 const exp_func_name = :main_experiment
 
-function make_arguments(args::Dict)
-    new_args = ["--opt1", args["opt1"], "--opt2", args["opt2"]]
-    return new_args
-end
+# What arguments get swept over.
+arg_dict = Dict(
+    "opt1"=>1:50,
+    "opt2"=>[5,6,7,8]
+)
+# The order of the arguments in the sweep (optional)
+arg_order = ["opt2", "opt1"]
 
-function test_experiment()
-    arg_dict = Dict(
-        ["opt1"=>collect(1:10), "opt2"=>[5,6,7,8]]
-    )
-    arg_list = ["opt1", "opt2"]
+static_args = Dict("steps" => 102902)
 
-    static_args = ["--steps", "102902"]
+args_iterator = ArgIterator(arg_dict,
+                            static_args;
+                            arg_order=arg_order)
 
-    args_iterator = ArgIterator(arg_dict,
-                                static_args;
-                                arg_list=arg_list,
-                                make_args=make_arguments)
+# Don't name anything in global scope `experiment`!!!
+exp = Experiment(save_loc,
+                 exp_file,
+                 exp_module_name,
+                 exp_func_name,
+                 args_iterator)
 
-
-    experiment = Experiment(save_loc,
-                            exp_file,
-                            exp_module_name,
-                            exp_func_name,
-                            args_iterator)
-
-    create_experiment_dir(experiment; tldr="hello tldr")
-    add_experiment(experiment; settings_dir="settings")
-    ret = job(experiment; num_workers=6, extra_args=[save_loc])
-    post_experiment(experiment, ret)
-
-end
-
-test_experiment()
-
-
+Reproduce.pre_experiment(exp; tldr="Hello tldr")
+ret = job(exp; num_workers=6, extra_args=[1])
+post_experiment(exp, ret)
 

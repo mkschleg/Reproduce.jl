@@ -20,6 +20,8 @@ end
 ArgLooper(list, stable_arg, runs_iter, run_name="--run") =
     ArgLooper(list, runs_iter, stable_arg, false, run_name)
 
+set_save_dir!(iter::ArgLooper, path) = iter.stable_arg["save_dir"] = path
+
 function make_arguments(iter::ArgLooper{SA, RI}, state) where {SA<:Vector{String}, RI}
     arg_list = Vector{String}()
     arg_list = [iter.dict_list[state[2][1]]; [iter.run_name, string(iter.runs_iter[state[2][2]])]; iter.stable_arg]

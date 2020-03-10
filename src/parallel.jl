@@ -78,6 +78,8 @@ job(exp::Experiment, job_id::Integer; kwargs...) =
         checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))", kwargs...)
 
 function create_procs(num_workers, project, job_file_dir)
+    # assume started fresh julia instance...
+    
     pids = Array{Int64, 1}()
     exc_opts = Base.JLOptions()
     color_opt = "no"
@@ -88,7 +90,7 @@ function create_procs(num_workers, project, job_file_dir)
     if IN_SLURM()
         num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
         if num_add_workers != 0
-            # assume started fresh julia instance...
+
             pids = addprocs(SlurmManager(num_add_workers);
                             exeflags=["--project=$(project)", "--color=$(color_opt)"],
                             job_file_loc=job_file_dir)
@@ -211,9 +213,6 @@ function parallel_job(experiment_file::AbstractString,
         end
     end
 
-    pids = create_procs(num_workers, project, job_file_dir)
-    println(nworkers(), " ", pids)
-
     n = length(args_iter)
 
     finished_jobs_arr = fill(false, n)
@@ -227,10 +226,23 @@ function parallel_job(experiment_file::AbstractString,
             JLD2.@save checkpoint_file finished_jobs_arr
         end
     end
-    @show finished_jobs_arr
     done_jobs = finished_jobs_arr
 
-    @info "Number of Jobs: $(n)"
+    @info "Number of Jobs left: $(n - sum(done_jobs))/$(n)"
+
+    if all(done_jobs)
+        @info "All jobs finished!"
+        return findall((x)->x==false, finished_jobs_arr)
+    end
+
+    # Include on first proc for pre-compiliation
+    @info "pre-compile"
+    @everywhere begin
+        include($experiment_file)
+    end
+    
+    pids = create_procs(num_workers, project, job_file_dir)
+    println(nworkers(), " ", pids)
 
     #########
     #
@@ -246,30 +258,22 @@ function parallel_job(experiment_file::AbstractString,
         mod_str = string(exp_module_name)
         func_str = string(exp_func_name)
 
-        @everywhere const global exp_file=$experiment_file
-        @everywhere const global expand_args=$expand_args
-        @everywhere const global extra_args=$extra_args
-        @everywhere const global store_exceptions=$store_exceptions
-        @everywhere const global exception_dir=$exception_dir
-        @everywhere const global checkpoint_file = $checkpoint_file
-        @everywhere const global checkpointing=$checkpointing
-        @everywhere const global done_jobs=$finished_jobs_arr
+        @everywhere const global RP_exp_file=$experiment_file
 
         @everywhere begin
             eval(:(using Reproduce))
             eval(:(using Distributed))
             eval(:(using SharedArrays))
-            include(exp_file)
-            @info "$(exp_file) included on process $(myid())"
+            include(RP_exp_file)
+            @info "$(RP_exp_file) included on process $(myid())"
             mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
-            const global exp_func = getfield(mod, Symbol($func_str))
-            experiment(args) = exp_func(args)
+            const global RP_exp_func = getfield(mod, Symbol($func_str))
             @info "Experiment built on process $(myid())"
         end
 
         ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
             if !checkpointing || !done_jobs[job_id]
-                _run_experiment(Main.exp_func, job_id, args, extra_args, exception_dir;
+                _run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
                                 expand_args=expand_args,
                                 verbose=verbose,
                                 store_exceptions=store_exceptions,
@@ -298,7 +302,6 @@ function parallel_job(experiment_file::AbstractString,
             end
             return findall((x)->x==false, finished_jobs_bool)
         end
-        
     catch ex
         Distributed.interrupt()
         rethrow()

@@ -16,18 +16,16 @@ function arg_parse_settings(as::ArgParseSettings = ArgParseSettings())
     return as
 end
 
-function main_experiment(args::Vector{String}, saveloc::AbstractString="default_save_loc")
+function main_experiment(args::Vector{String}, extra_arg)
     arg_settings = arg_parse_settings()
     parsed = parse_args(args, arg_settings)
-    main_experiment(parsed, saveloc)
+    main_experiment(parsed, extra_arg)
 end
 
-function main_experiment(parsed::Dict, saveloc = nothing)
-    if saveloc isa Nothing
-        create_info!(parsed, parsed["save_dir"])
-    else
-        create_info!(parsed, saveloc)
-    end
+function main_experiment(parsed::Dict, extra_arg = nothing)
+
+    create_info!(parsed, parsed["save_dir"])
+
     j = 0
     if parsed["opt1"] == 2
         throw("Oh No!!!")
@@ -38,25 +36,8 @@ function main_experiment(parsed::Dict, saveloc = nothing)
     return j
 end
 
-# function main_experiment(parsed::Dict)
-#     if saveloc isa Nothing
-#         create_info!(parsed, parsed["save_dir"])
-#     else
-#         create_info!(parsed, saveloc)
-#     end
-#     j = 0
-#     if parsed["opt1"] == 2
-#         throw("Oh No!!!")
-#     end
-
-#     @save joinpath(parsed["_SAVE"], "data.jld2") parsed
-
-#     return j
-# end
-
-
 # When using Config.jl as a config manager.
-function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
+function main_experiment(cfg::ConfigManager, extra_arg)
     j = 0
     if cfg["args"]["opt1"] == 2
         throw("Oh No!!!")
@@ -66,8 +47,7 @@ function main_experiment(cfg::ConfigManager, saveloc::String="default_save_loc")
         "opt1"=>cfg["args"]["opt1"],
         "opt2"=>cfg["args"]["opt2"],
         "run"=>cfg["run"],
-        "saveloc"=>saveloc
-    )
+        "extra_arg"=>extra_arg)
     
     save(cfg, args)
     return j 

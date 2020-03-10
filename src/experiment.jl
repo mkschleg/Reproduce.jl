@@ -32,20 +32,15 @@ struct Experiment{I}
     config::Union{String, Nothing}
 end
 
-function Experiment(dir, file, module_name, func_name, args_iter, config=nothing; modify_save_path=true)
-    arg_iter = if modify_save
-        cp_arg_iter = copy(arg_iter)
-        if arg_iter isa ArgIterator
-            cp_arg_iter.static_args["save_dir"] = joinpath(dir, "data")
-        elseif arg_iter isa ArgLooper
-            cp_arg_iter.static_args["save_dir"] = joinpath(dir, "data")
-        end
+function Experiment(dir, file, module_name, func_name, arg_iter, config=nothing; modify_save_path=true)
+    arg_iter = if modify_save_path
+        cp_arg_iter = deepcopy(arg_iter)
+        set_save_dir!(cp_arg_iter, joinpath(dir, "data"))
         cp_arg_iter
     else
         arg_iter
     end
-
-    Experiment(dir, file, Symbol(module_name), Symbol(func_name), args_iter, hash(string(args_iter)), config)
+    Experiment(dir, file, Symbol(module_name), Symbol(func_name), arg_iter, hash(string(arg_iter)), config)
 end
 
 
@@ -75,9 +70,9 @@ function Experiment(config_path, save_path="")
 
 
     args = if iter_type == "iter"
-        arg_list = get(cdict, "arg_list_order", nothing)
+        arg_order = get(cdict, "arg_list_order", nothing)
 
-        @assert arg_list isa Nothing || all(sort(arg_list) .== sort(collect(keys(dict["sweep_args"]))))
+        @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(dict["sweep_args"]))))
         
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
         static_args_dict["save_dir"] = joinpath(save_dir, "data")
@@ -89,10 +84,10 @@ function Experiment(config_path, save_path="")
         end
         ArgIterator(sweep_args_dict,
                     static_args_dict,
-                    arg_list=arg_list)
+                    arg_order=arg_order)
     elseif iter_type == "looper"
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
-        static_args_dict["save_dir"] = joinnpath(save_dir, "data")
+        static_args_dict["save_dir"] = joinpath(save_dir, "data")
         args_dict_list = [dict["loop_args"][k] for k ∈ keys(dict["loop_args"])]
         run_param = cdict["run_param"]
         num_runs = cdict["num_runs"]
@@ -101,11 +96,14 @@ function Experiment(config_path, save_path="")
         throw("$(iter_type) not supported.")
     end
 
+    set_save_dir!(args, joinpath(save_dir, "data"))
+    
     experiment = Experiment(save_dir,
                             exp_file,
                             exp_module_name,
                             exp_func_name,
-                            args, config)
+                            args,
+                            config_path)
     
 end
 
@@ -272,7 +270,7 @@ function add_experiment(exp_dir,
                 (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
                 tab*"#+BEGIN_src julia\n" *
                 (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
-                (args_iter isa ArgIterator ? tab*"arg_list = $(args_iter.arg_list)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
+                (args_iter isa ArgIterator ? tab*"arg_order = $(args_iter.arg_order)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
                 tab*"static_arg = $(args_iter.static_args)\n\n" *
                 tab*"# Make Arguments\n" *
                 tab*make_args_str*"\n" *
