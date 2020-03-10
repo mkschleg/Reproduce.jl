@@ -47,7 +47,7 @@ export ArgIterator, ArgLooper
 include("args_iter.jl")
 include("args_looper.jl")
 
-export Experiment, create_experiment_dir, add_experiment, post_experiment
+export Experiment, create_experiment_dir, add_experiment, pre_experiment, post_experiment
 include("experiment.jl")
 
 export job, config_job

@@ -39,7 +39,7 @@ exp = Experiment(save_loc,
                  exp_func_name,
                  args_iterator)
 
-Reproduce.pre_experiment(exp; tldr="Hello tldr")
+pre_experiment(exp; tldr="Hello tldr")
 ret = job(exp; num_workers=6, extra_args=[1])
 post_experiment(exp, ret)
 

@@ -235,15 +235,6 @@ function parallel_job(experiment_file::AbstractString,
         return findall((x)->x==false, finished_jobs_arr)
     end
 
-    # Include on first proc for pre-compiliation
-    @info "pre-compile"
-    @everywhere begin
-        include($experiment_file)
-    end
-    
-    pids = create_procs(num_workers, project, job_file_dir)
-    println(nworkers(), " ", pids)
-
     #########
     #
     # Meaty middle: Compiling code, running jobs, managing which jobs fail.
@@ -252,6 +243,15 @@ function parallel_job(experiment_file::AbstractString,
 
     job_id_channel = RemoteChannel(()->Channel{Int}(length(args_iter)), 1)
     done_channel = RemoteChannel(()->Channel{Bool}(1), 1)
+
+    # Include on first proc for pre-compiliation
+    @info "pre-compile"
+    @everywhere begin
+        include($experiment_file)
+    end
+    
+    pids = create_procs(num_workers, project, job_file_dir)
+    println(nworkers(), " ", pids)
 
     try
 
