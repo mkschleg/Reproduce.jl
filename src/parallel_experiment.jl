@@ -211,6 +211,11 @@ function parallel_job(experiment_file::AbstractString,
         end
     end
 
+    @info "pre-compile"
+    @everywhere begin
+        include($experiment_file)
+    end
+  
     pids = create_procs(num_workers, project, job_file_dir)
     println(nworkers(), " ", pids)
 
