@@ -125,7 +125,7 @@ function create_experiment_dir(exp_dir::AbstractString;
                                org_file=true,
                                replace=false,
                                tldr="")
-
+    mkdir_fn = occursin("/", exp_dir) ? _safe_mkpath : _safe_mkdir
     if isdir(exp_dir)
         if !replace
             @info "directory already created - told to not replace..."
@@ -133,11 +133,11 @@ function create_experiment_dir(exp_dir::AbstractString;
         else
             @info "directory already created - told to replace..."
             rm(exp_dir; force=true, recursive=true)
-            _safe_mkdir(exp_dir)
+            mkdir_fn(exp_dir)
         end
     else
         @info "creating experiment directory"
-        _safe_mkdir(exp_dir)
+        mkdir_fn(exp_dir)
     end
 
     if isdir(joinpath(exp_dir, "data"))
