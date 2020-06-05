@@ -112,7 +112,7 @@ function create_procs(num_workers, project, job_file_dir)
             pids = procs()
         end
     end
-    return pids
+    return fetch(pids)
 end
 
 function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
