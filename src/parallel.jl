@@ -23,10 +23,15 @@ function job(experiment_file::AbstractString,
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-        @time task_job(experiment_file, exp_dir, args_iter, task_id;
+        @time task_job(experiment_file,
+                       exp_dir,
+                       args_iter,
+                       task_id;
                        kwargs...)
     else
-        @time parallel_job(experiment_file, exp_dir, args_iter;
+        @time parallel_job(experiment_file,
+                           exp_dir,
+                           args_iter;
                            kwargs...)
     end
 end
