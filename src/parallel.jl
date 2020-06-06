@@ -5,7 +5,7 @@ using Logging
 using SharedArrays
 using JLD2
 using Dates
-using Config
+# using Config
 
 include("slurm.jl")
 using .ClusterManagers
@@ -19,7 +19,8 @@ job
 """
 function job(experiment_file::AbstractString,
              exp_dir::AbstractString,
-             args_iter; kwargs...)
+             args_iter;
+             kwargs...)
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
         @info "This is an array Job! Time to get task and start job."
         task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
@@ -46,26 +47,26 @@ function job(experiment_file::AbstractString,
                    kwargs...)
 end
 
-function config_job(config_file::AbstractString, dir::AbstractString, num_runs::Int; data_manager=Config.HDF5Manager(), kwargs...)
-    cfg = ConfigManager(config_file, dir, data_manager)
-    exp_module_name = cfg.config_dict["config"]["exp_module_name"]
-    exp_file = cfg.config_dict["config"]["exp_file"]
-    exp_func_name = cfg.config_dict["config"]["exp_func_name"]
-    if IN_SLURM()
-        if !isdir(joinpath(dir, "jobs"))
-            mkdir(joinpath(dir, "jobs"))
-        end
-        if !isdir(joinpath(dir, "jobs", cfg.config_dict["save_path"]))
-            mkdir(joinpath(dir, "jobs", cfg.config_dict["save_path"]))
-        end
-    end
-    job(exp_file, dir, Config.iterator(cfg, num_runs);
-        exp_module_name=Symbol(exp_module_name),
-        exp_func_name=Symbol(exp_func_name),
-        exception_dir = joinpath("except", cfg.config_dict["save_path"]),
-        job_file_dir = joinpath(dir, "jobs", cfg.config_dict["save_path"]),
-        kwargs...)
-end
+# function config_job(config_file::AbstractString, dir::AbstractString, num_runs::Int; data_manager=Config.HDF5Manager(), kwargs...)
+#     cfg = ConfigManager(config_file, dir, data_manager)
+#     exp_module_name = cfg.config_dict["config"]["exp_module_name"]
+#     exp_file = cfg.config_dict["config"]["exp_file"]
+#     exp_func_name = cfg.config_dict["config"]["exp_func_name"]
+#     if IN_SLURM()
+#         if !isdir(joinpath(dir, "jobs"))
+#             mkdir(joinpath(dir, "jobs"))
+#         end
+#         if !isdir(joinpath(dir, "jobs", cfg.config_dict["save_path"]))
+#             mkdir(joinpath(dir, "jobs", cfg.config_dict["save_path"]))
+#         end
+#     end
+#     job(exp_file, dir, Config.iterator(cfg, num_runs);
+#         exp_module_name=Symbol(exp_module_name),
+#         exp_func_name=Symbol(exp_func_name),
+#         exception_dir = joinpath("except", cfg.config_dict["save_path"]),
+#         job_file_dir = joinpath(dir, "jobs", cfg.config_dict["save_path"]),
+#         kwargs...)
+# end
 
 
 job(exp::Experiment; kwargs...) =
@@ -73,7 +74,8 @@ job(exp::Experiment; kwargs...) =
         exp_module_name=exp.module_name,
         exp_func_name=exp.func_name,
         exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
-        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))", kwargs...)
+        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))",
+        kwargs...)
 
 job(exp::Experiment, job_id::Integer; kwargs...) =
     job(exp.file, exp.dir, exp.args_iter, job_id;
@@ -121,11 +123,12 @@ function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
                          store_exceptions=true,
                          skip_exceptions=false)
 
-    run_exp = if args isa ConfigManager
-        !(isfile(joinpath(Config.get_logdir(args), "exception.txt")))
-    else
-        !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
-    end
+    run_exp = !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
+    # run_exp = if args isa ConfigManager
+    #     !(isfile(joinpath(Config.get_logdir(args), "exception.txt")))
+    # else
+    #     !(isfile(joinpath(exception_loc, "job_$(job_id).exc")))
+    # end
 
     if run_exp || !skip_exceptions
         try
@@ -143,18 +146,18 @@ function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
                 @warn "Exception encountered for job: $(job_id)"
             end
             if store_exceptions
-                if args isa ConfigManager
-                    exception_file(
-                        joinpath(Config.get_logdir(args), "exception.txt"),
-                        job_id, ex, stacktrace(catch_backtrace()))
-                    exception_file(
-                        joinpath(exception_loc, join(["run_", args["run"], "_param_setting_", args["param_setting"], ".exc"])),
-                        job_id, ex, stacktrace(catch_backtrace()))
-                else
-                    exception_file(
-                        joinpath(exception_loc, "job_$(job_id).exc"),
-                        job_id, ex, stacktrace(catch_backtrace()))
-                end
+                # if args isa ConfigManager
+                #     exception_file(
+                #         joinpath(Config.get_logdir(args), "exception.txt"),
+                #         job_id, ex, stacktrace(catch_backtrace()))
+                #     exception_file(
+                #         joinpath(exception_loc, join(["run_", args["run"], "_param_setting_", args["param_setting"], ".exc"])),
+                #         job_id, ex, stacktrace(catch_backtrace()))
+                # else
+                exception_file(
+                    joinpath(exception_loc, "job_$(job_id).exc"),
+                    job_id, ex, stacktrace(catch_backtrace()))
+                # end
             end
             return false
         end
@@ -278,12 +281,15 @@ function parallel_job(experiment_file::AbstractString,
 
         ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
             if !checkpointing || !done_jobs[job_id]
-                _run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
+                finished = _run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
                                 expand_args=expand_args,
                                 verbose=verbose,
                                 store_exceptions=store_exceptions,
-                                skip_exceptions=skip_exceptions)
-                Distributed.put!(job_id_channel, job_id)
+                                           skip_exceptions=skip_exceptions)
+                if finished
+                    Distributed.put!(job_id_channel, job_id)
+                end
+                
                 if checkpointing && myid() == 2
                     # Deal w/ job_id_channel...
                     JLD2.@load checkpoint_file finished_jobs_arr
