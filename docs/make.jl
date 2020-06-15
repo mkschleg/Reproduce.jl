@@ -8,12 +8,13 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Manual" => [
-            "Experiment"=>"manual/experiment.md"
-            # "Data Analysis"=>"manual/data_analysis.md"
+            "Developing an Experiment"=>"manual/experiment.md"
+            "Parallel Jobs"=>"manual/parallel.md"
         ],
         "Documentation" => [
             "Experiment"=>"docs/experiment.md",
-            # "Search"=>"docs/search.md"
+            "Parallel"=>"docs/parallel.md",
+            "Data Structure"=>"docs/parse.md"
         ]
     ]
 )

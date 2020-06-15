@@ -212,6 +212,49 @@ function create_experiment_dir(exp::Experiment;
     return
 end
 
+
+function append_experiment_notes_file(
+    exp_dir,
+    experiment_file,
+    exp_module_name,
+    exp_func_name,
+    settings_file,
+    config_file,
+    args_iter,
+    config)
+
+    if isfile(joinpath(exp_dir, "notes.org"))
+        
+        date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
+        tab = "    "
+        make_args_str = "nothing"
+        if typeof(args_iter) == ArgIterator && args_iter.make_args !== nothing
+            m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
+            make_args_str, line1 = definition(String, m)
+        end
+        
+        open(joinpath(exp_dir, "notes.org"), "a") do f
+            exp_str = "* " * date_str * "\n\n" *
+                tab*"Git-head: $(Git.head())\n" *
+                tab*"Git-branch: $(Git.branch())\n" *
+                tab*"experiment file: $(experiment_file)\n" *
+                tab*"experiment module: $(string(exp_module_name))\n" *
+                tab*"experiment function: $(string(exp_func_name))\n\n" *
+                tab*"settings file: $(basename(settings_file))\n" *
+                (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
+                tab*"#+BEGIN_src julia\n" *
+                (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
+                (args_iter isa ArgIterator ? tab*"arg_order = $(args_iter.arg_order)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
+                tab*"static_arg = $(args_iter.static_args)\n\n" *
+                tab*"# Make Arguments\n" *
+                tab*make_args_str*"\n" *
+                tab*"#+END_src\n\n"
+            write(f, exp_str)
+        end
+    end
+
+end
+
 """
     add_experiment(exp_dir, experiment_file, exp_module_name, exp_func_name, args_iter, hash, config)
     add_experiment(exp::Experiment)
@@ -248,34 +291,20 @@ function add_experiment(exp_dir,
         joinpath(settings_dir, "config_0x"*string(hash, base=16)*splitext(config)[end])
     end
 
-    date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
-    tab = "\t"
-
+    append_experiment_notes_file(
+        exp_dir,
+        experiment_file,
+        exp_module_name,
+        exp_func_name,
+        settings_file,
+        config_file,
+        args_iter,
+        config)
+    
     make_args_str = "nothing"
-    if typeof(args_iter) == ArgIterator && args_iter.make_args != nothing
+    if typeof(args_iter) == ArgIterator && args_iter.make_args !== nothing
         m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
         make_args_str, line1 = definition(String, m)
-    end
-
-    if isfile(joinpath(exp_dir, "notes.org"))
-        open(joinpath(exp_dir, "notes.org"), "a") do f
-            exp_str = "* " * date_str * "\n\n" *
-                tab*"Git-head: $(Git.head())\n" *
-                tab*"Git-branch: $(Git.branch())\n" *
-                tab*"experiment file: $(experiment_file)\n" *
-                tab*"experiment module: $(string(exp_module_name))\n" *
-                tab*"experiment function: $(string(exp_func_name))\n\n" *
-                tab*"settings file: $(basename(settings_file))\n" *
-                (!(config isa Nothing) ? tab*"config file: $(basename(config_file))\n\n" : "\n") *
-                tab*"#+BEGIN_src julia\n" *
-                (args_iter isa ArgIterator ? tab*"dict = $(args_iter.dict)\n" : tab*"runs_iter=$(args_iter.runs_iter)\n") *
-                (args_iter isa ArgIterator ? tab*"arg_order = $(args_iter.arg_order)\n" : tab*"arg_list = $(args_iter.dict_list)\n") *
-                tab*"static_arg = $(args_iter.static_args)\n\n" *
-                tab*"# Make Arguments\n" *
-                tab*make_args_str*"\n" *
-                tab*"#+END_src\n\n"
-            write(f, exp_str)
-        end
     end
 
     jldopen(settings_file, "w") do file
@@ -307,14 +336,18 @@ function post_experiment(exp_dir::AbstractString, canceled_jobs::Array{Int64, 1}
         return
     end
 
-    tab = "\t"
-    date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
-    open(joinpath(exp_dir, "notes.org"), "a") do f
 
-        post_exp_str = tab*"Post Experiment: \n" *
-            tab*"Canceled Jobs: $(canceled_jobs)\n" *
-            tab*"Ended: $(date_str)\n"
-        write(f, post_exp_str)
+    if isfile(joinpath(exp_dir, "notes.org"))
+        tab = "\t"
+        date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
+        
+        open(joinpath(exp_dir, "notes.org"), "a") do f
+
+            post_exp_str = tab*"Post Experiment: \n" *
+                tab*"Canceled Jobs: $(canceled_jobs)\n" *
+                tab*"Ended: $(date_str)\n"
+            write(f, post_exp_str)
+        end
     end
 end
 

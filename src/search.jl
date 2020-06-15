@@ -78,8 +78,6 @@ function search(itemCollection::ItemCollection, search_dict)
 
 end
 
-search(dir::AbstractString, search_dict; settings_file="settings.jld2") =
-    search(ItemCollection(dir; settings_file=settings_file), search_dict)
 
 """
     details
