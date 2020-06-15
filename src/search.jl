@@ -121,7 +121,7 @@ end
 
 get difference of the list of items.
 """
-function Base.diff(items::Array{Reproduce.Item, 1};
+function Base.diff(items::Array{Item, 1};
                    exclude_keys::Union{Array{String,1}, Array{Symbol,1}} = Array{String, 1}(),
                    exclude_parse_values::Bool=true)
 
@@ -153,7 +153,4 @@ end
 
 Base.diff(itemCollection::ItemCollection; kwargs...) =
     Base.diff(itemCollection.items; kwargs...)
-
-Base.diff(base_dir::AbstractString; settings_file="settings.jld2", kwargs...) =
-    Base.diff(ItemCollection(base_dir; settings_file=settings_file); kwargs...)
 

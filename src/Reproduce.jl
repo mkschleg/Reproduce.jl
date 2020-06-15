@@ -1,8 +1,6 @@
 
 module Reproduce
 
-# using Config
-
 export
     create_info!,
     create_info,
@@ -18,9 +16,8 @@ export ItemCollection, search, details
 include("search.jl")
 
 # Saving utils in Config.jl are really nice. Just reusing and pirating a new type until I figure out what FileIO can and can't do.
-export HDF5Manager, BSONManager, JLD2Manager, save, save!, load
+export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
 include("data_manager.jl")
-
 
 abstract type AbstractArgIter end
 
@@ -31,7 +28,7 @@ include("args_looper.jl")
 export Experiment, create_experiment_dir, add_experiment, pre_experiment, post_experiment
 include("experiment.jl")
 
-export job, config_job
+export job
 include("parallel.jl")
 
 end # module
