@@ -56,7 +56,7 @@ end
 
 function search_test()
     search_dict = Dict("a"=>1)
-    ic = search(TEST_DIR, search_dict)
+    ic = search(ItemCollection(TEST_DIR), search_dict)
     tests = fill(false, 1, 5)
     for item in ic
         tests[1, item.parsed_args["b"]] = true

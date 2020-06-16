@@ -14,11 +14,21 @@ IN_SLURM() = return "SLURM_JOBID" ∈ keys(ENV)
 
 
 """
-job
+    job(experiment::Experiment; kwargs...)
+    job(experiment_file, exp_dir, args_iter; kwags...)
 
+Run a job specified by the experiment.
 """
-function job(experiment_file::AbstractString,
-             exp_dir::AbstractString,
+job(exp::Experiment; kwargs...) =
+    job(exp.file, exp.dir, exp.args_iter;
+        exp_module_name=exp.module_name,
+        exp_func_name=exp.func_name,
+        exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
+        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))",
+        kwargs...)
+
+function job(experiment_file,
+             exp_dir,
              args_iter;
              kwargs...)
     if "SLURM_ARRAY_TASK_ID" in keys(ENV)
@@ -37,13 +47,28 @@ function job(experiment_file::AbstractString,
     end
 end
 
+"""
+    job(exp::Experiment, job_id; kwargs...)
+    job(experiment_file::AbstractString, exp_dir::AbstractString, args_iter, job_id; kwargs...)
+
+Run a specific task specified by experiment and job_id.
+"""
+job(exp::Experiment, job_id; kwargs...) =
+    job(exp.file, exp.dir, exp.args_iter, job_id;
+        exp_module_name=exp.module_name,
+        exp_func_name=exp.func_name,
+        exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
+        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))",
+        kwargs...)
+
+
 function job(experiment_file::AbstractString,
              exp_dir::AbstractString,
              args_iter,
-             task_id::Int;
+             job_id;
              kwargs...)
-    @info "This is a task job! ID is $(task_id)"
-    @time task_job(experiment_file, exp_dir, args_iter, task_id;
+    @info "This is a task job! ID is $(job_id)"
+    @time task_job(experiment_file, exp_dir, args_iter, job_id;
                    kwargs...)
 end
 
@@ -69,20 +94,6 @@ end
 # end
 
 
-job(exp::Experiment; kwargs...) =
-    job(exp.file, exp.dir, exp.args_iter;
-        exp_module_name=exp.module_name,
-        exp_func_name=exp.func_name,
-        exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
-        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))",
-        kwargs...)
-
-job(exp::Experiment, job_id::Integer; kwargs...) =
-    job(exp.file, exp.dir, exp.args_iter, job_id;
-        exp_module_name=exp.module_name,
-        exp_func_name=exp.func_name,
-        exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
-        checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))", kwargs...)
 
 function create_procs(num_workers, project, job_file_dir)
     # assume started fresh julia instance...
@@ -97,11 +108,9 @@ function create_procs(num_workers, project, job_file_dir)
     if IN_SLURM()
         num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
         if num_add_workers != 0
-
             pids = addprocs(SlurmManager(num_add_workers);
                             exeflags=["--project=$(project)", "--color=$(color_opt)"],
                             job_file_loc=job_file_dir)
-            print("\n")
         end
     else 
         if nworkers() == 1
@@ -117,7 +126,7 @@ function create_procs(num_workers, project, job_file_dir)
     return fetch(pids)
 end
 
-function _run_experiment(exp_func, job_id, args, extra_args, exception_loc;
+function run_experiment(exp_func, job_id, args, extra_args, exception_loc;
                          expand_args=false,
                          verbose=false,
                          store_exceptions=true,
@@ -182,7 +191,7 @@ function parallel_job(experiment_file::AbstractString,
                       args_iter;
                       exp_module_name::Union{String, Symbol}=:Main,
                       exp_func_name::Union{String, Symbol}=:main_experiment,
-                      num_workers=2,
+                      num_workers=Sys.CPU_THREADS - 1,
                       project=".",
                       extra_args=[],
                       exception_dir="except",
@@ -281,11 +290,11 @@ function parallel_job(experiment_file::AbstractString,
 
         ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
             if !checkpointing || !done_jobs[job_id]
-                finished = _run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
-                                expand_args=expand_args,
-                                verbose=verbose,
-                                store_exceptions=store_exceptions,
-                                           skip_exceptions=skip_exceptions)
+                finished = run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
+                                          expand_args=expand_args,
+                                          verbose=verbose,
+                                          store_exceptions=store_exceptions,
+                                          skip_exceptions=skip_exceptions)
                 if finished
                     Distributed.put!(job_id_channel, job_id)
                 end
@@ -321,7 +330,8 @@ end
 
 
 
-function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
+function task_job(experiment_file::AbstractString,
+                  exp_dir::AbstractString,
                   args_iter, task_id::Integer;                  
                   exp_module_name::Union{String, Symbol}=:Main,
                   exp_func_name::Union{String, Symbol}=:main_experiment,
@@ -366,11 +376,11 @@ function task_job(experiment_file::AbstractString, exp_dir::AbstractString,
     job_id = task_id
     args = collect(args_iter)[task_id][2]
     ret = @sync @async begin
-        _run_experiment(Main.exp_func, job_id, args, extra_args, exception_dir;
-                        expand_args=expand_args,
-                        verbose=verbose,
-                        store_exceptions=store_exceptions,
-                        skip_exceptions=skip_exceptions)
+        run_experiment(Main.exp_func, job_id, args, extra_args, exception_dir;
+                       expand_args=expand_args,
+                       verbose=verbose,
+                       store_exceptions=store_exceptions,
+                       skip_exceptions=skip_exceptions)
     end
 
     if checkpointing

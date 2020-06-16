@@ -26,7 +26,7 @@ Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 [compat]
 ArgParse = "0.6, 1.0"
 BSON = "0.2"
-CodeTracking = "0.5"
+CodeTracking = "0.5, 1.0"
 FileIO = "1"
 Git = "0.3"
 Glob = "1.2"
