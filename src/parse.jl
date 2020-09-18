@@ -27,8 +27,7 @@ function create_info!(parsed_args::Dict,
                       custom_folder_name = "RP",
                       HASHER=hash,
                       replace=true,
-                      settings_file="settings.jld2",
-                      )
+                      settings_file="settings.jld2")
 
     KEY_TYPE = keytype(parsed_args)
 
@@ -58,7 +57,7 @@ function create_info!(parsed_args::Dict,
             @warn "Hash Conflict in Reproduce create_info! Overwriting data."
         else
             @info "Told not to replace. Exiting Experiment."
-            exit(0)
+            throw("Hash Conflict.")
         end
     end
 

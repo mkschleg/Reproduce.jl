@@ -18,8 +18,7 @@ function test_experiment()
 
     experiment = Experiment(config_file)
 
-    create_experiment_dir(experiment; tldr="hello tldr")
-    add_experiment(experiment; settings_dir="settings")
+    pre_experiment(experiment; tldr="hello tldr")
     ret = job(experiment; num_workers=6)
     post_experiment(experiment, ret)
 
