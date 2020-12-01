@@ -85,6 +85,7 @@ function Experiment(config_path, save_path="")
         ArgIterator(sweep_args_dict,
                     static_args_dict,
                     arg_order=arg_order)
+        
     elseif iter_type == "looper"
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
         static_args_dict["save_dir"] = joinpath(save_dir, "data")
@@ -212,7 +213,12 @@ function create_experiment_dir(exp::Experiment;
     return
 end
 
+"""
+    append_experiment_notes_file(exp_dir, experiment_file, exp_module_name, exp_func_name, settings_file, config_file, args_iter, config)
 
+Write into an org file which contains the notes for the run experiments
+
+"""
 function append_experiment_notes_file(
     exp_dir,
     experiment_file,

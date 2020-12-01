@@ -1,6 +1,6 @@
 
 
-using Glob
+# using Glob
 import FileIO
 using JLD2
 
@@ -34,11 +34,15 @@ struct ItemCollection
     items::Array{Item,1}
 end
 
-function ItemCollection(dir::AbstractString; settings_file="settings.jld2")
-    dir_list = glob(joinpath(dir, "*", settings_file))
+function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data_folder="data")
+    # dir_list = glob(joinpath(dir, "*", settings_file))
+    dir = splitpath(dir)[end] == data_folder ? dir : joinpath(dir, data_folder)
+    dir_list = readdir(dir)
     items = Array{Item,1}()
     for p in dir_list
-        append!(items, [Item(p)])
+        if isfile(joinpath(dir, p, settings_file))
+            push!(items, Item(joinpath(dir, p, settings_file)))
+        end
     end
 
     return ItemCollection(items)

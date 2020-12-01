@@ -6,14 +6,14 @@ TEST_DIR = "TEST_DIR"
 function arg_parse(args; use_git_info=false, as_symbols=false)
 
     s = ArgParseSettings()
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "--a"
         help = "a file to save the results to"
         arg_type = Int64
         required = true
     end
 
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "--b"
         help = "a file to save the results to"
         arg_type = String
