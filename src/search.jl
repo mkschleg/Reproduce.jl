@@ -36,10 +36,35 @@ struct ItemCollection
 end
 
 ItemCollection(items::Array{Item, 1}) = ItemCollection(items, 0x0)
-    
+
+function _splitpath(dir)
+    if @isdefined splitpath
+        splitpath(dir)
+    else
+
+        drive, p = splitdrive(p)
+        out = String[]
+        isempty(p) && (pushfirst!(out,p))  # "" means the current directory.
+        while !isempty(p)
+            dir, base = _splitdir_nodrive(p)
+            dir == p && (pushfirst!(out, dir); break)  # Reached root node.
+            if !isempty(base)  # Skip trailing '/' in basename
+                pushfirst!(out, base)
+            end
+            p = dir
+        end
+        if !isempty(drive)  # Tack the drive back on to the first element.
+            out[1] = drive*out[1]  # Note that length(out) is always >= 1.
+        end
+        return out
+
+    end
+end
+
 function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data_folder="data")
     # dir_list = glob(joinpath(dir, "*", settings_file))
-    dir = splitpath(dir)[end] == data_folder ? dir : joinpath(dir, data_folder)
+
+    dir = _splitpath(dir)[end] == data_folder ? dir : joinpath(dir, data_folder)
     dir_list = readdir(dir)
 
     d = joinpath(dir, "item_col.jld2")
