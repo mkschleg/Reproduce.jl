@@ -37,11 +37,11 @@ end
 
 ItemCollection(items::Array{Item, 1}) = ItemCollection(items, 0x0)
 
-function _splitpath(dir)
+function _splitpath(ps::AbstractString)
     if @isdefined splitpath
-        splitpath(dir)
+        splitpath(ps)
     else
-
+        p = String(ps)
         drive, p = splitdrive(p)
         out = String[]
         isempty(p) && (pushfirst!(out,p))  # "" means the current directory.
