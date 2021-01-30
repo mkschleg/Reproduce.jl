@@ -32,12 +32,25 @@ A collection of items. Mostly helpful, but not really used yet.
 """
 struct ItemCollection
     items::Array{Item,1}
+    dir_hash::UInt64
 end
 
+ItemCollection(items::Array{Item, 1}) = ItemCollection(items, 0x0)
+    
 function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data_folder="data")
     # dir_list = glob(joinpath(dir, "*", settings_file))
     dir = splitpath(dir)[end] == data_folder ? dir : joinpath(dir, data_folder)
     dir_list = readdir(dir)
+
+    d = joinpath(dir, "item_col.jld2")
+    id = hash(string(dir_list))
+    if isfile(d)
+        ic = FileIO.load(d)["ic"]
+        if ic.dir_hash == id
+            return ic
+        end
+    end
+    
     items = Array{Item,1}()
     for p in dir_list
         if isfile(joinpath(dir, p, settings_file))
@@ -45,7 +58,11 @@ function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data
         end
     end
 
-    return ItemCollection(items)
+
+    ic = ItemCollection(items, id)
+    FileIO.save(d, "ic", ic)
+    
+    return ic
 end
 
 
@@ -155,4 +172,5 @@ end
 
 Base.diff(itemCollection::ItemCollection; kwargs...) =
     Base.diff(itemCollection.items; kwargs...)
+
 

@@ -11,5 +11,5 @@ arg_iter_type = "iter"
 steps=102902
 
 [sweep_args]
-opt2 = [5,6,7,8]
+opt2 = [5,6,7,8,9]
 opt1 = "1:50"

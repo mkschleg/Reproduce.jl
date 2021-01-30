@@ -1,7 +1,7 @@
 
 using Reproduce
 using JLD2
-using Config
+# using Config
 
 function arg_parse_settings(as::ArgParseSettings = ArgParseSettings())
 
@@ -37,19 +37,19 @@ function main_experiment(parsed::Dict, extra_arg = nothing)
 end
 
 # When using Config.jl as a config manager.
-function main_experiment(cfg::ConfigManager, extra_arg)
-    j = 0
-    if cfg["args"]["opt1"] == 2
-        throw("Oh No!!!")
-    end
+# function main_experiment(cfg::ConfigManager, extra_arg)
+#     j = 0
+#     if cfg["args"]["opt1"] == 2
+#         throw("Oh No!!!")
+#     end
 
-    args = Dict(
-        "opt1"=>cfg["args"]["opt1"],
-        "opt2"=>cfg["args"]["opt2"],
-        "run"=>cfg["run"],
-        "extra_arg"=>extra_arg)
+#     args = Dict(
+#         "opt1"=>cfg["args"]["opt1"],
+#         "opt2"=>cfg["args"]["opt2"],
+#         "run"=>cfg["run"],
+#         "extra_arg"=>extra_arg)
     
-    save(cfg, args)
-    return j 
-end
+#     save(cfg, args)
+#     return j 
+# end
 
