@@ -42,6 +42,13 @@ function _splitpath(ps::AbstractString)
         splitpath(ps)
     else
         p = String(ps)
+        _splitdir_nodrive(path::String) = _splitdir_nodrive("", path)
+        function _splitdir_nodrive(a::String, b::String)
+            m = match(path_dir_splitter,b)
+            m === nothing && return (a,b)
+            a = string(a, isempty(m.captures[1]) ? m.captures[2][1] : m.captures[1])
+            a, String(m.captures[3])
+        end
         drive, p = splitdrive(p)
         out = String[]
         isempty(p) && (pushfirst!(out,p))  # "" means the current directory.
