@@ -1,7 +1,7 @@
 using Logging
 using Reexport
 
-import Git, JLD2
+import GitCommand, JLD2
 @reexport using ArgParse
 
 
@@ -16,6 +16,13 @@ get_save_dir(parsed::Dict) = parsed[keytype(parsed)(SAVE_NAME_KEY)]
 get_hash(parsed::Dict) = parsed[keytype(parsed)(HASH_KEY)]
 get_git_info(parsed::Dict) = parsed[keytype(parsed)(GIT_INFO_KEY)]
 
+function git_head()
+    s = ""
+    GitCommand.git() do git
+        s = read(`$git rev-parse HEAD`, String)
+    end
+    s[1:end-1]
+end
 
 """
     create_info!
@@ -42,7 +49,7 @@ function create_info!(parsed_args::Dict,
     hashed = HASHER(hash_args)
     parsed_args[hash_key] = hashed
 
-    git_info = use_git_info ? Git.head() : "0"
+    git_info = use_git_info ? git_head() : "0"
     parsed_args[git_info_key] = git_info
 
     save_name = joinpath(save_dir, make_save_name(hashed, git_info; head=custom_folder_name))
