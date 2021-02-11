@@ -1,6 +1,6 @@
 module SEARCH_TESTS
 
-using Reproduce, Test, Git, FileIO
+using Reproduce, Test, FileIO
 
 const TEST_DIR = "TEST_DIR"
 

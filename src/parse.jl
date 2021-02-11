@@ -1,7 +1,7 @@
 using Logging
 using Reexport
 
-import GitCommand, JLD2
+import JLD2
 @reexport using ArgParse
 
 
@@ -16,13 +16,6 @@ get_save_dir(parsed::Dict) = parsed[keytype(parsed)(SAVE_NAME_KEY)]
 get_hash(parsed::Dict) = parsed[keytype(parsed)(HASH_KEY)]
 get_git_info(parsed::Dict) = parsed[keytype(parsed)(GIT_INFO_KEY)]
 
-function git_head()
-    s = ""
-    GitCommand.git() do git
-        s = read(`$git rev-parse HEAD`, String)
-    end
-    s[1:end-1]
-end
 
 """
     create_info!

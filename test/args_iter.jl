@@ -1,6 +1,6 @@
 module ARGSITER_TESTS
 
-using Reproduce, Test, Git, FileIO
+using Reproduce, Test, FileIO
 
 args_dict = Dict(
     "a"=>[1,2,3,4],

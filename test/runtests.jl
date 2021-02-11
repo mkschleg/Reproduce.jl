@@ -1,5 +1,5 @@
 # test/runtests.jl
-using Reproduce, Test, FileIO, Git
+using Reproduce, Test, FileIO
 
 include("parse.jl")
 include("search.jl")

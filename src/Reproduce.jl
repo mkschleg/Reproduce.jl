@@ -1,6 +1,25 @@
 
 module Reproduce
 
+import GitCommand
+
+function git_head()
+    s = ""
+    GitCommand.git() do git
+        s = read(`$git rev-parse HEAD`, String)
+    end
+    s[1:end-1]
+end
+
+function git_branch()
+    s = ""
+    GitCommand.git() do git
+        s = read(`$git rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
+    end
+    s[1:end-1]
+end
+
+
 export
     create_info!,
     create_info,

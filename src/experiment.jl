@@ -1,6 +1,5 @@
 using Dates
 using CodeTracking
-using Git
 using JLD2
 using Logging
 
@@ -241,8 +240,8 @@ function append_experiment_notes_file(
         
         open(joinpath(exp_dir, "notes.org"), "a") do f
             exp_str = "* " * date_str * "\n\n" *
-                tab*"Git-head: $(Git.head())\n" *
-                tab*"Git-branch: $(Git.branch())\n" *
+                tab*"Git-head: $(git_head())\n" *
+                tab*"Git-branch: $(git_branch())\n" *
                 tab*"experiment file: $(experiment_file)\n" *
                 tab*"experiment module: $(string(exp_module_name))\n" *
                 tab*"experiment function: $(string(exp_func_name))\n\n" *

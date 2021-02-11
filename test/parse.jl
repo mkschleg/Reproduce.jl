@@ -1,5 +1,5 @@
 module PARSE_TESTS
-using Reproduce, Test, Git, FileIO, JLD2
+using Reproduce, Test, FileIO, JLD2
 
 TEST_DIR = "TEST_DIR"
 
@@ -92,7 +92,7 @@ end
 
 function track_with_git_test()
 
-    git_head = Git.head()
+    git_head = Reproduce.git_head()
     used_keys = ["a", "b"]
     parsed_dicts = Dict{UInt64, Dict}()
     for i in 1:10
