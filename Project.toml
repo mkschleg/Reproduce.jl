@@ -1,7 +1,7 @@
 name = "Reproduce"
 uuid = "560a9c3a-0b8c-11e9-0329-d39dfcb85ed2"
 authors = ["Matt <mkschleg@gmail.com>"]
-version = "0.8.0"
+version = "0.8.1"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
@@ -24,12 +24,12 @@ Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [compat]
 ArgParse = "0.6, 1"
-BSON = "0.2"
-CodeTracking = "0.5, 1.0"
+BSON = "0.2, 0.3"
+CodeTracking = "0.5, 1"
 FileIO = "1"
 GitCommand = "2"
-HDF5 = "0.12, 0.13, 0.14"
-JLD2 = "0.1, 0.2, 0.3"
+HDF5 = "0.12, 0.13, 0.14, 0.15"
+JLD2 = "0.1, 0.2, 0.3, 0.4"
 JSON = "0.20, 0.21"
 ProgressMeter = "1, 1.1"
 Reexport = "0.2, 1"
