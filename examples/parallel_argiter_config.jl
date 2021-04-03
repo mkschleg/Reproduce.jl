@@ -12,7 +12,7 @@ using Pkg
 Pkg.activate(".")
 
 using Reproduce
-const config_file = "./examples/arg_iter_config.toml"
+const config_file = "examples/arg_iter_config.toml"
 
 function test_experiment()
 

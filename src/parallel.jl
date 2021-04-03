@@ -10,7 +10,7 @@ using Dates
 include("slurm.jl")
 using .ClusterManagers
 
-IN_SLURM() = return "SLURM_JOBID" ∈ keys(ENV)
+IN_SLURM() = "SLURM_JOBID" ∈ keys(ENV)
 
 
 """
@@ -205,6 +205,11 @@ function parallel_job(experiment_file::AbstractString,
         return findall((x)->x==false, finished_jobs_arr)
     end
 
+
+    if !(experiment_file[1] == '/' || experiment_file[1] == '\\')
+        experiment_file = joinpath(pwd(), experiment_file)
+    end
+    # @show experiment_file, pwd(), @__DIR__
     #########
     #
     # Meaty middle: Compiling code, running jobs, managing which jobs fail.
@@ -235,6 +240,7 @@ function parallel_job(experiment_file::AbstractString,
             eval(:(using Reproduce))
             eval(:(using Distributed))
             eval(:(using SharedArrays))
+
             include(RP_exp_file)
             @info "$(RP_exp_file) included on process $(myid())"
             mod = $mod_str=="Main" ? Main : getfield(Main, Symbol($mod_str))
