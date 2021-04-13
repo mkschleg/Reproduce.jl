@@ -209,7 +209,7 @@ function parallel_job(experiment_file::AbstractString,
     if !(experiment_file[1] == '/' || experiment_file[1] == '\\')
         experiment_file = joinpath(pwd(), experiment_file)
     end
-    # @show experiment_file, pwd(), @__DIR__
+
     #########
     #
     # Meaty middle: Compiling code, running jobs, managing which jobs fail.

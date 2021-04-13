@@ -186,7 +186,7 @@ function Base.diff(items::Array{Item, 1};
         tmp_dict = items[1] - item
         for key in filter((k)->k ∉ exclude_keys, keys(tmp_dict))
             if key ∉ keys(diff_parsed)
-                diff_parsed[key] = Array{typeof(items[1].parsed_args[key]), 1}()
+                diff_parsed[key] = Array{Any, 1}()
             end
             if tmp_dict[key][1] ∉ diff_parsed[key]
                 push!(diff_parsed[key], tmp_dict[key][1])
@@ -197,6 +197,7 @@ function Base.diff(items::Array{Item, 1};
         end
     end
     for key in keys(diff_parsed)
+        diff_parsed[key] = collect(promote(diff_parsed[key]...))
         sort!(diff_parsed[key])
     end
     return diff_parsed
