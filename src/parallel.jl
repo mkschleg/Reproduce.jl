@@ -5,6 +5,7 @@ using Logging
 using SharedArrays
 using JLD2
 using Dates
+using Parallelism
 # using Config
 
 include("slurm.jl")
@@ -217,7 +218,8 @@ function parallel_job(experiment_file::AbstractString,
     ########
 
     # job_id_channel: a job id will appear here if a job is finished.
-    job_id_channel = RemoteChannel(()->Channel{Int}(length(args_iter)), 1)
+    job_id_channel = RemoteChannel(()->Channel{Int}(min(1000, length(args_iter))), 1)
+    prg_channel = RemoteChannel(()->Channel{Bool}(min(1000, length(args_iter))), 1)
 
     # Include on first proc for pre-compiliation
     @info "pre-compile"
@@ -248,27 +250,41 @@ function parallel_job(experiment_file::AbstractString,
             @info "Experiment built on process $(myid())"
         end
 
-        ProgressMeter.@showprogress pmap(args_iter) do (job_id, args)
-            if !checkpointing || !done_jobs[job_id]
-                finished = run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
-                                          expand_args=expand_args,
-                                          verbose=verbose,
-                                          store_exceptions=store_exceptions,
-                                          skip_exceptions=skip_exceptions)
-                if finished
-                    Distributed.put!(job_id_channel, job_id)
-                end
-                
-                if checkpointing && myid() == 2
-                    # Deal w/ job_id_channel...
-                    JLD2.@load checkpoint_file finished_jobs_arr
-                    while isready(job_id_channel)
-                        new_job_id = take!(job_id_channel)
-                        finished_jobs_arr[new_job_id] = true
-                    end
-                    JLD2.@save checkpoint_file finished_jobs_arr
-                end
+        pgm = ProgressMeter.Progress(length(args_iter))
+
+        @sync begin
+            @async while Distributed.take!(prg_channel)
+                ProgressMeter.next!(pgm)
             end
+
+            @async begin
+                robust_pmap(args_iter) do (job_id, args)
+                    if !checkpointing || !done_jobs[job_id]
+                        finished = run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
+                                                  expand_args=expand_args,
+                                                  verbose=verbose,
+                                                  store_exceptions=store_exceptions,
+                                                  skip_exceptions=skip_exceptions)
+                        if finished
+                            Distributed.put!(job_id_channel, job_id)
+                        end
+                        
+                        if checkpointing && myid() == 2
+                            # Deal w/ job_id_channel...
+                            JLD2.@load checkpoint_file finished_jobs_arr
+                            while isready(job_id_channel)
+                                new_job_id = take!(job_id_channel)
+                                finished_jobs_arr[new_job_id] = true
+                            end
+                            JLD2.@save checkpoint_file finished_jobs_arr
+                        end
+                    end
+                    Distributed.put!(prg_channel, true)
+                    yield()
+                end
+                Distributed.put!(prg_channel, false)
+            end
+            
         end
 
         if checkpointing
