@@ -179,17 +179,19 @@ function Base.diff(items::Array{Item, 1};
     kt = keytype(items[1].parsed_args)
     exclude_keys = kt.(exclude_keys)
     if exclude_parse_values == true
-        exclude_keys = [exclude_keys; kt.([HASH_KEY, SAVE_NAME_KEY, GIT_INFO_KEY])]
+        exclude_keys = [exclude_keys; kt.([Reproduce.HASH_KEY, Reproduce.SAVE_NAME_KEY, Reproduce.GIT_INFO_KEY])]
     end
     diff_parsed = Dict{kt, Array}()
     for item in items
         tmp_dict = items[1] - item
         for key in filter((k)->k ∉ exclude_keys, keys(tmp_dict))
             if key ∉ keys(diff_parsed)
-                diff_parsed[key] = Array{Any, 1}()
+		diff_parsed[key] = Array{Any, 1}()
             end
+			
             if tmp_dict[key][1] ∉ diff_parsed[key]
                 push!(diff_parsed[key], tmp_dict[key][1])
+				new_type = typeof(tmp_dict[key])
             end
             if tmp_dict[key][2] ∉ diff_parsed[key]
                 push!(diff_parsed[key], tmp_dict[key][2])
@@ -197,7 +199,7 @@ function Base.diff(items::Array{Item, 1};
         end
     end
     for key in keys(diff_parsed)
-        diff_parsed[key] = collect(promote(diff_parsed[key]...))
+	diff_parsed[key] = collect(promote(diff_parsed[key]...))
         sort!(diff_parsed[key])
     end
     return diff_parsed

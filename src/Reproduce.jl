@@ -1,21 +1,15 @@
 
 module Reproduce
 
-import GitCommand
+import Git
 
 function git_head()
-    s = ""
-    GitCommand.git() do git
-        s = read(`$git rev-parse HEAD`, String)
-    end
+    s = read(`$(Git.git()) rev-parse HEAD`, String)
     s[1:end-1]
 end
 
 function git_branch()
-    s = ""
-    GitCommand.git() do git
-        s = read(`$git rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
-    end
+    s = read(`$(Git.git()) rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
     s[1:end-1]
 end
 
