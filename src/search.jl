@@ -37,39 +37,7 @@ end
 
 ItemCollection(items::Array{Item, 1}) = ItemCollection(items, 0x0)
 
-# function _splitpath(ps::AbstractString)
-#     if @isdefined splitpath
-#         splitpath(ps)
-#     else
-#         p = String(ps)
-#         _splitdir_nodrive(path::String) = _splitdir_nodrive("", path)
-#         function _splitdir_nodrive(a::String, b::String)
-#             m = match(Base.Filesystem.path_dir_splitter, b)
-#             m === nothing && return (a,b)
-#             a = string(a, isempty(m.captures[1]) ? m.captures[2][1] : m.captures[1])
-#             a, String(m.captures[3])
-#         end
-#         drive, p = splitdrive(p)
-#         out = String[]
-#         isempty(p) && (pushfirst!(out,p))  # "" means the current directory.
-#         while !isempty(p)
-#             dir, base = _splitdir_nodrive(p)
-#             dir == p && (pushfirst!(out, dir); break)  # Reached root node.
-#             if !isempty(base)  # Skip trailing '/' in basename
-#                 pushfirst!(out, base)
-#             end
-#             p = dir
-#         end
-#         if !isempty(drive)  # Tack the drive back on to the first element.
-#             out[1] = drive*out[1]  # Note that length(out) is always >= 1.
-#         end
-#         return out
-
-#     end
-# end
-
 function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data_folder="data")
-    # dir_list = glob(joinpath(dir, "*", settings_file))
 
     dir = splitpath(dir)[end] == data_folder ? dir : joinpath(dir, data_folder)
     dir_list = readdir(dir)
@@ -108,7 +76,6 @@ Base.lastindex(ic::ItemCollection, idx) = lastindex(ic.items)
 Base.iterate(ic::ItemCollection, state=1) = state > length(ic) ? nothing : (ic[state], state + 1)
 
 
-
 """
     search
 
@@ -118,19 +85,24 @@ function search(itemCollection::ItemCollection, search_dict)
 
     dict_keys = keys(search_dict)
     found_items = Array{Item, 1}()
-    hash_codes = Array{UInt64, 1}()
-    save_dirs = Array{String, 1}()
     for (item_idx, item) in enumerate(itemCollection.items)
         if search_dict == filter(k->((k[1] in dict_keys)), item.parsed_args)
             push!(found_items, item)
-            push!(hash_codes, item.parsed_args["_HASH"])
-            push!(save_dirs, item.parsed_args["_SAVE"])
         end
     end
     return ItemCollection(found_items)
 
 end
 
+function search(f::Function, ic::ItemCollection)
+    found_items = Vector{Reproduce.Item}()
+    for (item_idx, item) in enumerate(ic.items)
+        if f(item)
+            push!(found_items, item)
+        end
+    end
+    return ItemCollection(found_items)
+end
 
 """
     details

@@ -257,7 +257,7 @@ function parallel_job(experiment_file::AbstractString,
                 ProgressMeter.next!(pgm)
             end
 
-            @async begin
+            @sync begin
                 robust_pmap(args_iter) do (job_id, args)
                     if !checkpointing || !done_jobs[job_id]
                         finished = run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
@@ -281,6 +281,7 @@ function parallel_job(experiment_file::AbstractString,
                     end
                     Distributed.put!(prg_channel, true)
                     yield()
+                    return
                 end
                 Distributed.put!(prg_channel, false)
             end
