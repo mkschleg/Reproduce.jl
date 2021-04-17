@@ -22,7 +22,7 @@ IN_SLURM() = "SLURM_JOBID" ∈ keys(ENV)
 
 Run a job specified by the experiment.
 """
-job(exp::Experiment, args...; kwargs...) =
+job(exp::Experiment; kwargs...) =
     job(exp.file,
         exp.dir,
         exp.args_iter;
@@ -79,10 +79,9 @@ function create_procs(num_workers, project, job_file_dir)
 
     if IN_SLURM()
         num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
-        if num_add_workers != 0
-            pids = addprocs(SlurmManager(num_add_workers);
-                            exeflags=["--project=$(project)", "--color=$(color_opt)"],
-                            job_file_loc=job_file_dir)
+        if num_add_workers != 0 && nworkers() == 1
+            pids = addprocs(num_workers;
+                            exeflags=["--project=$(project)", "--color=$(color_opt)"])
         end
     else 
         if nworkers() == 1
@@ -255,6 +254,12 @@ function parallel_job(experiment_file::AbstractString,
         @sync begin
             @async while Distributed.take!(prg_channel)
                 ProgressMeter.next!(pgm)
+                JLD2.@load checkpoint_file finished_jobs_arr
+                while isready(job_id_channel)
+                    new_job_id = take!(job_id_channel)
+                    finished_jobs_arr[new_job_id] = true
+                end
+                JLD2.@save checkpoint_file finished_jobs_arr
             end
 
             @sync begin
@@ -268,24 +273,12 @@ function parallel_job(experiment_file::AbstractString,
                         if finished
                             Distributed.put!(job_id_channel, job_id)
                         end
-                        
-                        if checkpointing && myid() == 2
-                            # Deal w/ job_id_channel...
-                            JLD2.@load checkpoint_file finished_jobs_arr
-                            while isready(job_id_channel)
-                                new_job_id = take!(job_id_channel)
-                                finished_jobs_arr[new_job_id] = true
-                            end
-                            JLD2.@save checkpoint_file finished_jobs_arr
-                        end
                     end
                     Distributed.put!(prg_channel, true)
                     yield()
-                    return
                 end
                 Distributed.put!(prg_channel, false)
             end
-            
         end
 
         if checkpointing
