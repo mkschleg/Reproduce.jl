@@ -8,8 +8,8 @@ using Dates
 using Parallelism
 # using Config
 
-include("slurm.jl")
-using .ClusterManagers
+# include("slurm.jl")
+# using .ClusterManagers
 
 IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
 
@@ -78,8 +78,8 @@ function create_procs(num_workers, project, job_file_dir)
     end
 
     if IN_SLURM()
-        num_add_workers = parse(Int64, ENV["SLURM_NTASKS"])
-        if num_add_workers != 0 && nworkers() == 1
+        num_workers = parse(Int64, ENV["SLURM_NTASKS"])
+        if num_workers != 0 && nworkers() == 1
             pids = addprocs(num_workers;
                             exeflags=["--project=$(project)", "--color=$(color_opt)"])
         end
