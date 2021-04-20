@@ -11,7 +11,7 @@ using Parallelism
 include("slurm.jl")
 using .ClusterManagers
 
-IN_SLURM() = "SLURM_JOBID" ∈ keys(ENV)
+IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
 
 
 """
