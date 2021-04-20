@@ -65,7 +65,8 @@ function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data
     return ic
 end
 
-Base.show(io::IO, ic::ItemCollection) = print(io, "ItemCollection(", length(ic), ", ", ic.dir_hash, ")")
+Base.show(io::IO, ic::ItemCollection) =
+    print(io, "ItemCollection(Size: ", length(ic), ", Dir Hash: ", ic.dir_hash, ")")
 
 # Iterator
 Base.eltype(::Type{ItemCollection}) = Item
