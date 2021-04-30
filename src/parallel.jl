@@ -79,10 +79,9 @@ function create_procs(num_workers, project, job_file_dir)
 
     if IN_SLURM()
         num_workers = parse(Int64, ENV["SLURM_NTASKS"])
-        if num_workers != 0 && nworkers() == 1
-            pids = addprocs(num_workers;
-                            exeflags=["--project=$(project)", "--color=$(color_opt)"], tunnel = true)
-        end
+        pids = addprocs(SlurmManager(num_workers);
+                        exeflags=["--project=$(project)", "--color=$(color_opt)"],
+                        job_file_loc=job_file_dir)
     else 
         if nworkers() == 1
             pids = addprocs(num_workers;
