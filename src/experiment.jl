@@ -1,6 +1,7 @@
 using Dates
 using CodeTracking
 using JLD2
+using FileIO
 using Logging
 
 # Config files
@@ -88,7 +89,13 @@ function Experiment(config_path, save_path="")
     elseif iter_type == "looper"
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
         static_args_dict["save_dir"] = joinpath(save_dir, "data")
-        args_dict_list = [dict["loop_args"][k] for k ∈ keys(dict["loop_args"])]
+        args_dict_list = if "loop_args" ∈ keys(dict)
+            [dict["loop_args"][k] for k ∈ keys(dict["loop_args"])]
+        elseif "arg_file" ∈ keys(cdict)
+            d = FileIO.load(cdict["arg_file"])
+            d["args"]
+        end
+
         run_param = cdict["run_param"]
         num_runs = cdict["num_runs"]
         ArgLooper(args_dict_list, static_args_dict, 1:num_runs, run_param)
