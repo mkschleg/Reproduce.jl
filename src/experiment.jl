@@ -97,8 +97,11 @@ function Experiment(config_path, save_path="")
         end
 
         run_param = cdict["run_param"]
-        num_runs = cdict["num_runs"]
-        ArgLooper(args_dict_list, static_args_dict, 1:num_runs, run_param)
+        run_list = cdict["run_list"]
+        if run_list isa string
+            run_list = eval(Meta.parse(sweep_args_dict[key]))
+        end
+        ArgLooper(args_dict_list, static_args_dict, run_list, run_param)
     else
         throw("$(iter_type) not supported.")
     end
