@@ -99,7 +99,7 @@ function Experiment(config_path, save_path="")
         run_param = cdict["run_param"]
         run_list = cdict["run_list"]
         if run_list isa String
-            run_list = eval(Meta.parse(sweep_args_dict[key]))
+            run_list = eval(Meta.parse(cdict["run_list"]))
         end
         ArgLooper(args_dict_list, static_args_dict, run_list, run_param)
     else
