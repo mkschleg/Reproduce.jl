@@ -64,7 +64,7 @@ function launch(manager::SlurmManager, params::Dict, instances_arr::Array,
 
         np = manager.np
         jobname = "julia-$(getpid())"
-        srun_cmd = `srun --no-kill -J $jobname -n $np -o "$(job_output_template)" -D $exehome $(srunargs) $exename $exeflags $(worker_arg())`
+        srun_cmd = `srun --exclusive --no-kill -J $jobname -n $np -o "$(job_output_template)" -D $exehome $(srunargs) $exename $exeflags $(worker_arg())`
         srun_proc = open(srun_cmd)
 
         slurm_spec_regex = r"([\w]+):([\d]+)#(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})"
