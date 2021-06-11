@@ -6,7 +6,7 @@ struct ArgIterator <: AbstractArgIter
     done::Bool
 end
 
-function ArgIterator(dict, static_arg::Dict; arg_order=nothing)
+function ArgIterator(dict, static_arg::Dict=Dict(); arg_order=nothing)
     ArgIterator(dict,
                 Dict{String, Any}(static_arg),
                 arg_order==nothing ? collect(keys(dict)) : arg_order,
