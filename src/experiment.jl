@@ -245,10 +245,6 @@ function append_experiment_notes_file(
         date_str = Dates.format(now(), dateformat"<yyyy-mm-dd e HH:MM:SS>")
         tab = "    "
         make_args_str = "nothing"
-        if typeof(args_iter) == ArgIterator && args_iter.make_args !== nothing
-            m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
-            make_args_str, line1 = definition(String, m)
-        end
         
         open(joinpath(exp_dir, "notes.org"), "a") do f
             exp_str = "* " * date_str * "\n\n" *
@@ -319,10 +315,6 @@ function add_experiment(exp_dir,
         config)
     
     make_args_str = "nothing"
-    if typeof(args_iter) == ArgIterator && args_iter.make_args !== nothing
-        m = CodeTracking.@which args_iter.make_args(Dict{String, String}())
-        make_args_str, line1 = definition(String, m)
-    end
 
     jldopen(settings_file, "w") do file
         file["args_iter"]=args_iter

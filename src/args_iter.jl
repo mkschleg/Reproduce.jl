@@ -1,54 +1,21 @@
 
-struct ArgIterator{A, SA} <: AbstractArgIter
+struct ArgIterator <: AbstractArgIter
     dict::Dict
-    static_args::SA
+    static_args::Dict{String, Any}
     arg_order::Vector{String}
     done::Bool
-    make_args::A
-end
-
-function ArgIterator(dict, static_arg::Vector{String}; arg_order=nothing, make_args=nothing)
-    @warn "Arg Iterators w/ arg_parse is deprecated in favor of passing a dictionary to your experiments."
-    ArgIterator(dict,
-                static_arg,
-                arg_order==nothing ? collect(keys(dict)) : arg_order,
-                false,
-                make_args)
 end
 
 function ArgIterator(dict, static_arg::Dict; arg_order=nothing)
     ArgIterator(dict,
                 Dict{String, Any}(static_arg),
                 arg_order==nothing ? collect(keys(dict)) : arg_order,
-                false,
-                nothing)
+                false)
 end
 
 set_save_dir!(iter::ArgIterator, path) = iter.static_args["save_dir"] = path
 
-function make_arguments(iter::ArgIterator{A, Vector{String}}, state) where {A}
-    arg_list = Vector{String}()
-    if iter.make_args isa Nothing
-        new_ret_list = Vector{String}()
-        for (arg_idx, arg) in enumerate(iter.arg_order)
-            push!(new_ret_list, arg)
-            push!(new_ret_list, string(iter.dict[arg][state[2][arg_idx]]))
-        end
-        arg_list = [new_ret_list; iter.static_args]
-    else
-        d = Dict{String, Union{String, Tuple}}()
-        for (arg_idx, arg) in enumerate(iter.arg_order)
-            if typeof(iter.dict[arg][state[2][arg_idx]]) <: Tuple
-                d[arg] = string.(iter.dict[arg][state[2][arg_idx]])
-            else
-                d[arg] = string(iter.dict[arg][state[2][arg_idx]])
-            end
-        end
-        arg_list = [iter.make_args(d); iter.static_args]
-    end
-end
-
-function make_arguments(iter::ArgIterator{A, SA}, state) where {A, SA<:Dict}
+function make_arguments(iter::ArgIterator, state)
     d = Dict{String, Any}()
     for (arg_idx, arg) in enumerate(iter.arg_order)
         if contains(arg, "+")
@@ -59,7 +26,6 @@ function make_arguments(iter::ArgIterator{A, SA}, state) where {A, SA<:Dict}
         else
             d[arg] = iter.dict[arg][state[2][arg_idx]]
         end
-
     end
     merge!(d, iter.static_args)
     d
