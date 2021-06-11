@@ -18,7 +18,7 @@ set_save_dir!(iter::ArgIterator, path) = iter.static_args["save_dir"] = path
 function make_arguments(iter::ArgIterator, state)
     d = Dict{String, Any}()
     for (arg_idx, arg) in enumerate(iter.arg_order)
-        if contains(arg, "+")
+        if occursin("+", arg) #contains(arg, "+")
             ks = split(arg, "+")
             for (idx, k) ∈ enumerate(ks)
                 d[k] = iter.dict[arg][state[2][arg_idx]][idx]
