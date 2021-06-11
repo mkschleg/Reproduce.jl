@@ -51,7 +51,15 @@ end
 function make_arguments(iter::ArgIterator{A, SA}, state) where {A, SA<:Dict}
     d = Dict{String, Any}()
     for (arg_idx, arg) in enumerate(iter.arg_order)
-        d[arg] = iter.dict[arg][state[2][arg_idx]]
+        if contains(arg, "+")
+            ks = split(arg, "+")
+            for (idx, k) ∈ enumerate(ks)
+                d[k] = iter.dict[arg][state[2][arg_idx]][idx]
+            end
+        else
+            d[arg] = iter.dict[arg][state[2][arg_idx]]
+        end
+
     end
     merge!(d, iter.static_args)
     d

@@ -77,11 +77,13 @@ function Experiment(config_path, save_path="")
         static_args_dict = get(dict, "static_args", Dict{String, Any}())
         static_args_dict["save_dir"] = joinpath(save_dir, "data")
         sweep_args_dict = dict["sweep_args"]
+        
         for key ∈ keys(sweep_args_dict)
             if sweep_args_dict[key] isa String
                 sweep_args_dict[key] = eval(Meta.parse(sweep_args_dict[key]))
             end
         end
+        
         ArgIterator(sweep_args_dict,
                     static_args_dict,
                     arg_order=arg_order)
