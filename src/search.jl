@@ -34,7 +34,7 @@ function load_settings_file(settings_file)
 end
 
 
-function build_dataframe(folders::Vector{<:AbstractString}; kwargs...)
+function settings_dataframe(folders::Vector{<:AbstractString}; kwargs...)
     dfs = [build_dataframe(folder; kwargs...) for folder in folders]
     for i in 2:length(dfs)
 	append!(dfs[1], dfs[i])
@@ -42,7 +42,7 @@ function build_dataframe(folders::Vector{<:AbstractString}; kwargs...)
     dfs[1]
 end
 
-function build_dataframe(folder::AbstractString; 
+function settings_dataframe(folder::AbstractString; 
 			 filter=nothing, 
 			 force=false, 
 			 settings_file="settings.jld2")
@@ -122,6 +122,8 @@ struct ItemCollection
 end
 
 ItemCollection(items::Array{Item, 1}) = ItemCollection(items, 0x0)
+
+@deprecate ItemCollection(::AbstractString) settings_dataframe(::AbstractString)
 
 function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data_folder="data")
 
