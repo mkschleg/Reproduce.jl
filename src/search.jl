@@ -4,6 +4,92 @@
 import FileIO
 using JLD2
 
+using DataFrame
+
+function ic_to_df(ic::Reproduce.ItemCollection; filter=["_GIT_INFO", "_SAVE", "save_dir"])
+    dlist = [merge(item.parsed_args, Dict("folder_str"=>item.folder_str)) for item in ic]
+    doa = Dict()
+    for k in keys(dlist[1])
+	if filter isa Nothing || !(k in filter)
+	    doa[k] = [datum[k] for datum in dlist]
+	end
+    end
+    DataFrame(doa)
+end
+
+function files_to_ic_to_df(files::Vector{String}; kwargs...)
+    ic_arr = [ItemCollection(at(file)) for file in files]
+    ic_to_df(ItemCollection(vcat(getfield.(ic_arr, :items)...)); kwargs...)
+end
+
+
+function load_settings_file(settings_file)
+    dict = FileIO.load(settings_file)
+    if "settings_dict" ∈ keys(dict)
+        dict = dict["settings_dict"]
+    end
+    parsed_args = dict["parsed_args"]
+    used_keys = dict["used_keys"]
+    (parsed_args=parsed_args[used_keys], folder_str=basename(dirname(settings_file)))
+end
+
+
+function build_dataframe(folders::Vector{<:AbstractString}; kwargs...)
+    dfs = [build_dataframe(folder; kwargs...) for folder in folders]
+    for i in 2:length(dfs)
+	append!(dfs[1], dfs[i])
+    end
+    dfs[1]
+end
+
+function build_dataframe(folder::AbstractString; 
+			 filter=nothing, 
+			 force=false, 
+			 settings_file="settings.jld2")
+    
+    dir = splitpath(folder)[end] == "data" ? folder : joinpath(folder, "data")
+    dir_list = readdir(dir)
+
+    cache_loc = joinpath(dir, "data_frame.jld2")
+    id = hash(string(dir_list))
+    if isfile(cache_loc)
+        data = FileIO.load(cache_loc)
+        if id == data["id"] && !force
+            return data["data"]
+        end
+    end
+
+    # df = DataFrame()
+    doa = Dict()
+    item = load_settings_file(joinpath(dir, dir_list[1], settings_file))
+    dlist = merge(item.parsed_args, Dict("folder_str"=>item.folder_str))
+    
+    for (k,v) in dlist
+        if isnothing(filter) || k ∉ filter
+            doa[k] = [v]
+        end
+    end
+    
+    for p in dir_list
+	if basename(p) ∈ ["item_col.jld2", "data_frame.jld2"]
+	    continue
+	end
+        item = load_settings_file(joinpath(dir, p, settings_file))
+        dlist = merge(item.parsed_args, Dict("folder_str"=>item.folder_str))
+        for k in keys(doa)
+           push!(doa[k], dlist[k])
+        end
+    end
+
+    df = DataFrame(doa)
+    FileIO.save(cache_loc, "data", df, "id", id)
+    
+    return df
+end
+
+
+
+
 export ItemCollection, search, details
 
 """
