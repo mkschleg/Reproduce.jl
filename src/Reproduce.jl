@@ -32,6 +32,9 @@ include("search.jl")
 export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
 include("data_manager.jl")
 
+
+include("sql_manager.jl")
+
 abstract type AbstractArgIter end
 
 export ArgIterator, ArgLooper
