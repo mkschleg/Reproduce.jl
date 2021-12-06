@@ -13,7 +13,6 @@ function git_branch()
     s[1:end-1]
 end
 
-
 export
     create_info!,
     create_info,
@@ -32,7 +31,7 @@ include("search.jl")
 export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
 include("data_manager.jl")
 
-
+include("sql_utils.jl")
 include("sql_manager.jl")
 
 abstract type AbstractArgIter end

@@ -4,8 +4,6 @@ using Reexport
 import JLD2
 @reexport using ArgParse
 
-
-
 const HASH_KEY="_HASH"
 const SAVE_NAME_KEY="_SAVE"
 const GIT_INFO_KEY="_GIT_INFO"
@@ -15,6 +13,13 @@ make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(ha
 get_save_dir(parsed::Dict) = parsed[keytype(parsed)(SAVE_NAME_KEY)]
 get_hash(parsed::Dict) = parsed[keytype(parsed)(HASH_KEY)]
 get_git_info(parsed::Dict) = parsed[keytype(parsed)(GIT_INFO_KEY)]
+
+
+function hash_params(params; filter_keys=String[], HASHER=hash)
+    hash_args = filter(k->(!(k[1] in filter_keys)), params)
+    h = HASHER(hash_args)
+end
+
 
 
 """

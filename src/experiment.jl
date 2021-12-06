@@ -5,8 +5,18 @@ using FileIO
 using Logging
 
 # Config files
-using Pkg.TOML
+# TOML is in base in version > 1.6
+if VERSION > v"1.6"
+    using TOML
+else
+    using Pkg.TOML
+end
+
 using JSON
+
+
+struct UserSave end # for user controlled save procedure
+struct SQLSave end # for sql saving
 
 """
     Experiment(dir, file, module_name, func_name, args_iter, config=nothing; modify_save_path=true)
@@ -22,7 +32,7 @@ This is a struct which encapsulates the idea of an experiment.
 - `modify_save_path`: If true and you are using ArgIterator or ArgLooper the arg_iter added to the experiment will have a new static_arg "save_dir" added.
 
 """
-struct Experiment{I}
+struct Experiment{SAVETYPE, I}
     dir::String
     file::String
     module_name::Symbol
@@ -40,7 +50,7 @@ function Experiment(dir, file, module_name, func_name, arg_iter, config=nothing;
     else
         arg_iter
     end
-    Experiment(dir, file, Symbol(module_name), Symbol(func_name), arg_iter, hash(string(arg_iter)), config)
+    Experiment{UserSave}(dir, file, Symbol(module_name), Symbol(func_name), arg_iter, hash(string(arg_iter)), config)
 end
 
 
