@@ -14,7 +14,6 @@ end
 
 using JSON
 
-
 struct UserSave end # for user controlled save procedure
 struct SQLSave end # for sql saving
 
@@ -32,7 +31,7 @@ This is a struct which encapsulates the idea of an experiment.
 - `modify_save_path`: If true and you are using ArgIterator or ArgLooper the arg_iter added to the experiment will have a new static_arg "save_dir" added.
 
 """
-struct Experiment{SAVETYPE, I}
+struct Experiment{I}
     dir::String
     file::String
     module_name::Symbol
@@ -50,7 +49,7 @@ function Experiment(dir, file, module_name, func_name, arg_iter, config=nothing;
     else
         arg_iter
     end
-    Experiment{UserSave}(dir, file, Symbol(module_name), Symbol(func_name), arg_iter, hash(string(arg_iter)), config)
+    Experiment(dir, file, Symbol(module_name), Symbol(func_name), arg_iter, hash(string(arg_iter)), config)
 end
 
 
@@ -126,6 +125,15 @@ function Experiment(config_path, save_path="")
                             exp_func_name,
                             args,
                             config_path)
+    
+end
+
+
+function files_experiment()
+    
+end
+
+function sql_experiment()
     
 end
 

@@ -45,15 +45,27 @@ end
 
 function create_database(dbm::DBManager, db_name)
     if !database_exists(dbm, db_name)
-        execute(dbm, """CREATE DATABASE $(db_name);""")
+        try
+            execute(dbm, """CREATE DATABASE $(db_name);""")
+        catch err
+            if !(err isa MySQL.API.Error && err.errno == 1007)
+                throw(err)
+            else
+                sleep(1)
+            end
+        end
     end
+end
+
+function switch_to_database(dbm::DBManager, db_name)
+    execute(dbm, """USE $(db_name);""")
 end
 
 function create_and_switch_to_database(dbm::DBManager, db_name)
     if !database_exists(dbm, db_name)
-        execute(dbm, """CREATE DATABASE $(db_name);""")
+        create_database(dbm, db_name)
     end
-    execute(dbm, """USE $(db_name);""")
+    switch_to_database(dbm, db_name)
 end
 
 function table_exists(dbm::DBManager, tbl_name)
@@ -66,7 +78,18 @@ function create_table(dbm::DBManager, tbl_name, names, types)
     for (k, dt) in zip(names, types)
         sql *= "$(k) $(dt)" * (k == names[end] ? ");" : ", ")
     end
-    execute(dbm, sql)
+
+    try
+        execute(dbm, sql)
+    catch err
+        if !(err isa MySQL.API.Error && err.errno == 1050)
+            throw(err)
+        else
+            sleep(1)
+        end
+    end
+
+        
 end
 
 function create_table(dbm::DBManager, tbl_name; kwargs...)

@@ -22,7 +22,7 @@ export
     get_hash,
     get_git_info
 
-include("parse.jl")
+include("param_info.jl")
 
 export ItemCollection, search, details
 include("search.jl")
@@ -31,6 +31,8 @@ include("search.jl")
 export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
 include("data_manager.jl")
 
+
+# SQL Management...
 include("sql_utils.jl")
 include("sql_manager.jl")
 
@@ -44,6 +46,9 @@ export Experiment, create_experiment_dir, add_experiment, pre_experiment, post_e
 include("experiment.jl")
 
 export job
-include("parallel.jl")
+include("job.jl")
+
+
+include("exp_util.jl")
 
 end # module
