@@ -23,15 +23,8 @@ Create the parameter table for an experiment.
 """
 function create_param_table(dbm::DBManager, params)
     tbl_name = get_param_table_name()
-    # if table_exists(dbm, tbl_name)
-    #     return
-    # end
     names, types = get_param_schema(params)
-    try
-        create_table(dbm, tbl_name, names, types)
-    catch err
-
-    end
+    create_table(dbm, tbl_name, names, types)
 end
 
 function get_param_schema(params)

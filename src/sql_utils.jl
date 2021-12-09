@@ -57,10 +57,6 @@ function create_database(dbm::DBManager, db_name)
     end
 end
 
-function switch_to_database(dbm::DBManager, db_name)
-    execute(dbm, """USE $(db_name);""")
-end
-
 function create_and_switch_to_database(dbm::DBManager, db_name)
     if !database_exists(dbm, db_name)
         create_database(dbm, db_name)
