@@ -273,3 +273,17 @@ function get_sql_value(X::NamedTuple)
     ks = sort(collect(keys(X)))
     (v for v in X[ks])
 end
+
+#= #####
+
+Select
+
+=# #####
+
+function select_row_where(dbm::DBManager, tblname, key::String, value)
+    sql = """select * from $(tblname) where $(key)=$(value)"""
+    DataFrame(execute(dbm, sql))
+end
+
+
+

@@ -11,7 +11,7 @@ using Parallelism
 include("slurm.jl")
 using .ClusterManagers
 
-IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
+# IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
 
 
 """
@@ -55,18 +55,24 @@ end
 #     task_job(exp, job_id; kwargs...)
 # end
 
-function add_procs(comp_env::SlurmParallel, project, color_opt, job_file_dir)
+function add_procs(comp_env::SlurmParallel, num_workers, project, color_opt, job_file_dir)
+    num_workers = comp_env.num_procs
     addprocs(SlurmManager(num_workers);
              exeflags=["--project=$(project)", "--color=$(color_opt)"],
              job_file_loc=job_file_dir)
 end
 
-function add_procs(comp_env::LocalParallel, project, color_opt, job_file_dir)
-    addprocs(num_workers;
-             exeflags=["--project=$(project)", "--color=$(color_opt)"]) 
+function add_procs(comp_env::LocalParallel, num_workers, project, color_opt, job_file_dir)
+    if comp_env.num_procs == 0
+        addprocs(num_workers;
+                 exeflags=["--project=$(project)", "--color=$(color_opt)"])
+    else
+        addprocs(comp_env.num_procs;
+                 exeflags=["--project=$(project)", "--color=$(color_opt)"])
+    end
 end
 
-function create_procs(comp_env, project, job_file_dir)
+function create_procs(comp_env, num_workers, project, job_file_dir)
     # assume started fresh julia instance...
     
     exc_opts = Base.JLOptions()
@@ -75,7 +81,7 @@ function create_procs(comp_env, project, job_file_dir)
         color_opt = "yes"
     end
 
-    pids = add_procs(comp_env, project, color_opt, job_file_dir)
+    pids = add_procs(comp_env, num_workers, project, color_opt, job_file_dir)
     
     fetch(pids)
     
@@ -163,8 +169,10 @@ function parallel_job(
 
     job_md = experiment.job_metadata
     metadata = experiment.metadata
-    comp_env = experiment.comp_env
-    exp_dir = metadata.detail_loc
+    comp_env = metadata.comp_env
+    exp_dir = metadata.details_loc
+
+    args_iter = experiment.args_iter
     
     #######
     #
@@ -212,8 +220,8 @@ function parallel_job(
     exp_module_name = job_md.module_name
     exp_func_name = job_md.func_name
 
-    if !(isabaspath(experiment_file))
-        experiment_file = abstpath(experiment_file)
+    if !(isabspath(experiment_file))
+        experiment_file = abspath(experiment_file)
     end
 
     #########
@@ -233,7 +241,7 @@ function parallel_job(
     end
 
     # create processes.
-    pids = create_procs(num_workers, project, job_file_dir)
+    pids = create_procs(comp_env, num_workers, project, job_file_dir)
 
     try
 

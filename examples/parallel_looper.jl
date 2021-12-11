@@ -12,7 +12,7 @@ Pkg.activate(".")
 
 using Reproduce
 
-const save_loc = "test_exp"
+const save_loc = "test_exp_loop"
 const exp_file = "examples/experiment.jl"
 const exp_module_name = :Main
 const exp_func_name = :main_experiment

@@ -1,0 +1,17 @@
+
+
+[config]
+save_dir="test_loc_loop"
+exp_file="examples/experiment.jl"
+exp_module_name = "Main"
+exp_func_name = "main_experiment"
+arg_iter_type = "looper"
+
+run_param = "opt1"
+run_list = "1:50"
+
+arg_file = "examples/arg_file.jld2"
+
+[static_args]
+steps=102902
+

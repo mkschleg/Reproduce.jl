@@ -6,6 +6,7 @@ import JLD2
 
 const HASH_KEY="_HASH"
 const SAVE_NAME_KEY="_SAVE"
+const SAVE_KEY="_SAVE"
 const GIT_INFO_KEY="_GIT_INFO"
 
 make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(hashed,base=16))"
@@ -26,14 +27,16 @@ end
     create_info!
 """
 function create_info!(parsed_args::Dict,
-                      save_dir::String;
-                      filter_keys::Array{String,1} = Array{String,1}(),
+                      save_dir::AbstractString;
+                      filter_keys::Vector{String} = String[],
                       use_git_info = false,
-                      custom_folder_name = "RP",
-                      HASHER=hash,
-                      replace=true,
-                      settings_file="settings.jld2")
+                      HASHER = hash,
+                      replace = true)
 
+    @warn "create_info! is deprecated and will be removed in the future. Please use save_setup"
+    custom_folder_name = "RP"
+    settings_file="settings.jld2"
+    
     KEY_TYPE = keytype(parsed_args)
 
     unused_keys = KEY_TYPE.(filter_keys)
@@ -61,34 +64,13 @@ function create_info!(parsed_args::Dict,
         if replace
             @warn "Hash Conflict in Reproduce create_info! Overwriting data."
         else
-            @info "Told not to replace. Exiting Experiment."
-            throw("Hash Conflict.")
+            throw("Hash Conflict in Reproduce create_into. Told not to overwrite data.")
         end
     end
 
     # settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
     save_settings_file = joinpath(save_settings_path, settings_file)
     JLD2.@save save_settings_file parsed_args used_keys
-end
-
-function create_info(arg_list::Vector{String},
-                     settings::ArgParseSettings,
-                     save_dir::AbstractString;
-                     filter_keys::Array{String,1} = Array{String,1}(),
-                     use_git_info = false,
-                     custom_folder_name = "RP",
-                     HASHER=hash,
-                     replace=true,
-                     settings_file="settings.jld2", kwargs...)
-    parsed = parse_args(arg_list, settings; kwargs...)
-    create_info!(parsed, save_dir;
-                 filter_keys=filter_keys,
-                 use_git_info=use_git_info,
-                 HASHER=HASHER,
-                 custom_folder_name=custom_folder_name,
-                 replace=replace,
-                 settings_file=settings_file)
-    return parsed
 end
 
 

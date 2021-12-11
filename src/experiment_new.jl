@@ -1,28 +1,13 @@
 using Dates
 using CodeTracking
 using JLD2
-using FileIO
 using Logging
+using Distributed
 
 # Config files
 # TOML is in base in version > 1.6
-if VERSION > v"1.6"
-    using TOML
-else
-    using Pkg.TOML
-end
 
-using JSON
 
-struct FileSave
-    save_dir::String
-end # for user controlled save procedure
-
-struct SQLSave
-    database::String
-end # for sql saving
-
-get_database_name(sql_save::SQLSave) = sql_save.database
 
 
 IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
@@ -35,7 +20,11 @@ function get_comp_env()
     elseif "RP_TASK_ID" ∈ keys(ENV)
         LocalTask(parse(Int, ENV["RP_TASK_ID"]))
     else
-        LocalParallel()
+        if "RP_NTASKS" ∈ keys(ENV)
+            LocalParallel(parse(Int, ENV["RP_NTASKS"]))
+        else
+            LocalParallel(0)
+        end
     end
 end
 
@@ -60,6 +49,7 @@ end
 is_task_env(comp_env::LocalTask) = true
 
 struct LocalParallel
+    num_procs::Int
 end
 
 
@@ -88,95 +78,12 @@ end
 function Experiment(dir, file, module_name, func_name, save_type, args_iter, config=nothing; comp_env=get_comp_env())
 
     job_comp = JobMetadata(file, Symbol(module_name), Symbol(func_name))
-    exp_hash = hash(string(arg_iter))
+    exp_hash = hash(string(args_iter))
     md = Metadata(save_type, comp_env, dir, exp_hash, config)
     
     Experiment(job_comp, md, args_iter)
 end
 
-function Experiment(config_path, save_path; comp_env=get_comp_env())
-    # need to deal with parsing config file.
-    ext = splitext(config_path)[end]
-    dict = if ext == ".toml"
-        TOML.parsefile(config_path)
-    elseif ext == ".json"
-        JSON.Parser.parsefile(config_path)
-    else
-        throw(ErrorException("Experiment currently doesn't support $(ext) files."))
-    end
-
-    cdict = dict["config"]
-
-    detail_loc = joinpath(save_path, cdict["save_dir"])
-    
-    exp_file = cdict["exp_file"]
-    exp_module_name = cdict["exp_module_name"]
-    exp_func_name = cdict["exp_func_name"]
-
-    iter_type = cdict["arg_iter_type"]
-
-
-    save_type = if "mysql_database" ∈ keys(cdict)
-        SQLSave(cdict["mysql_database"])
-    else
-        FileSave(joinpath(details_loc, "data"))
-    end
-
-    static_args_dict = get(dict, "static_args", Dict{String, Any}())
-
-    # Soon save_dir will be deprecated
-    static_args_dict["save_dir"] = joinpath(details_loc, "data")
-    static_args_dict["save"] = save_type
-
-    args_iter = if iter_type == "iter"
-
-        arg_order = get(cdict, "arg_list_order", nothing)
-
-        @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(dict["sweep_args"]))))
-        
-        sweep_args_dict = dict["sweep_args"]
-        
-        for key ∈ keys(sweep_args_dict)
-            if sweep_args_dict[key] isa String
-                sweep_args_dict[key] = eval(Meta.parse(sweep_args_dict[key]))
-            end
-        end
-
-        ArgIterator(sweep_args_dict,
-                    static_args_dict,
-                    arg_order=arg_order)
-        
-    elseif iter_type == "looper"
-        
-        args_dict_list = if "loop_args" ∈ keys(dict)
-            [dict["loop_args"][k] for k ∈ keys(dict["loop_args"])]
-        elseif "arg_file" ∈ keys(cdict)
-            d = FileIO.load(cdict["arg_file"])
-            d["args"]
-        end
-
-        run_param = cdict["run_param"]
-        run_list = cdict["run_list"]
-
-        if run_list isa String
-            run_list = eval(Meta.parse(run_list))
-        end
-        
-        ArgLooper(args_dict_list, static_args_dict, run_param, run_list)
-        
-    else
-        throw("$(iter_type) not supported.")
-    end
-    
-    Experiment(detail_loc,
-               exp_file,
-               exp_module_name,
-               exp_func_name,
-               save_type,
-               args_iter,
-               config;
-               comp_env=get_comp_env())
-end
 
 function pre_experiment(exp::Experiment; kwargs...)
     pre_experiment(exp.metadata.save_type, exp; kwargs...)
@@ -265,22 +172,26 @@ get_config_copy_file(hash::UInt) = "config_0x"*string(hash, base=16)*".jld2"
 
 function add_experiment(exp::Experiment)
 
-    if is_task_env(exp.comp_env)
-        if get_task_id(exp.comp_env) != 1
-            task_id = exp.comp_env.id
+    comp_env = exp.metadata.comp_env
+    if is_task_env(comp_env)
+        if get_task_id(comp_env) != 1
+            task_id = comp_env.id
             @info "Only add experiment for task id == 1... id : $(task_id) $(task_id == 1)"
             return
         end
     end
 
-    @info "Adding Experiment to $(exp_dir)"
+    exp_dir = exp.metadata.details_loc
 
-    exp_dir = get_details_loc(exp)
+    @info "Adding Experiment to $(exp_dir)"
     
-    settings_dir = get_settings_dir_loc(exp_dir)
+    settings_dir = get_settings_dir(exp_dir)
     _safe_mkdir(settings_dir)
 
-    settings_file = joinpath(settings_dir, "settings_0x"*string(hash, base=16)*".jld2")
+    exp_hash = exp.metadata.hash
+    settings_file = joinpath(settings_dir, "settings_0x"*string(exp_hash, base=16)*".jld2")
+
+    args_iter = exp.args_iter
     
     jldopen(settings_file, "w") do file
         file["args_iter"] = args_iter
@@ -289,7 +200,7 @@ function add_experiment(exp::Experiment)
     config = exp.metadata.config
     
     if !(config isa Nothing)
-        config_file = joinpath(settings_dir, "config_0x"*string(hash, base=16)*splitext(config)[end])
+        config_file = joinpath(settings_dir, "config_0x"*string(exp_hash, base=16)*splitext(config)[end])
         cp(config, config_file; force=true)
     end
 
