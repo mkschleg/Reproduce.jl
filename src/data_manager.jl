@@ -14,20 +14,15 @@ Abstract type for various filetype managers.
 """
 abstract type SaveManager end
 
-# get manager filetype extension
-extension(data_manager::SaveManager) = extension(typeof(data_manager))
+SaveManager(::Val{T}) where T = begin
+    @warn """$(T) not supported by SaveManager, implement `SaveManager(::Val{:$(T)})`. Defaulting to jld2."""
+    JLD2Manager()
+end
 
-# save data, overwriting existing
-save(data_manager::SaveManager, path, data) = save(typeof(data_manager), path, data)
-
-# save data, adding to existing
-save!(data_manager::SaveManager, path, data) = save!(typeof(data_manager), path, data)
-
-# load data
-load(data_manager::SaveManager, path) = load(typeof(data_manager), path)
-# load(data_manager::SaveManager, path::String) = raise(DomainError("loand() not defined!"))
-
-
+SaveManager(::Val{:hdf5}) = HDF5Manager()
+SaveManager(::Val{:h5}) = HDF5Manager()
+SaveManager(::Val{:jld2}) = JLD2Manager()
+SaveManager(::Val{:bson}) = BSONManager()
 
 # ===============
 # --- H D F 5 ---
@@ -35,10 +30,10 @@ load(data_manager::SaveManager, path) = load(typeof(data_manager), path)
 
 struct HDF5Manager <: SaveManager end
 
-extension(data_manager::Type{HDF5Manager}) = ".h5"
+extension(::HDF5Manager) = ".h5"
 
 # Saving/Loading data
-function _save(data_manager::Type{HDF5Manager}, path, data, writeMode)
+function _save(::HDF5Manager, path, data, writeMode)
     HDF5.h5open(path, writeMode) do f
       for (k,v) in data
           write(f, k, v)
@@ -46,10 +41,10 @@ function _save(data_manager::Type{HDF5Manager}, path, data, writeMode)
     end
 end
 
-save!(data_manager::Type{HDF5Manager}, path, data) = _save(data_manager, path, data, "cw")
-save(data_manager::Type{HDF5Manager}, path, data) = _save(data_manager, path, data, "w")
+save!(::HDF5Manager, path, data) = _save(data_manager, path, data, "cw")
+save(::HDF5Manager, path, data) = _save(data_manager, path, data, "w")
 
-function load(data_manager::Type{HDF5Manager}, path)
+function load(::HDF5Manager, path)
     data = Dict()
     HDF5.h5open(path) do f
         keys = names(f)
@@ -66,13 +61,13 @@ end
 
 struct BSONManager <: SaveManager end
 
-extension(data_manager::Type{BSONManager}) = ".bson"
+extension(::BSONManager) = ".bson"
 
-function save(data_manager::Type{BSONManager}, path, data)
+function save(::BSONManager, path, data)
     BSON.bson(path, data)
 end
 
-function save!(data_manager::Type{BSONManager}, path, data)
+function save!(::BSONManager, path, data)
     try
         priorData = BSON.load(path)
         newData = merge(data, BSON.load(path))
@@ -82,7 +77,7 @@ function save!(data_manager::Type{BSONManager}, path, data)
     end
 end
 
-function load(data_manager::Type{BSONManager}, path)
+function load(::BSONManager, path)
     return BSON.load(path)
 end
 
@@ -92,10 +87,10 @@ end
 
 struct JLD2Manager <: SaveManager end
 
-extension(manager::Type{JLD2Manager}) = ".jld2"
+extension(::JLD2Manager) = ".jld2"
 
-save(manager::Type{JLD2Manager}, path, data) = FileIO.save(path, data) # JLD2.@save 
-function save!(manager::Type{JLD2Manager}, path, data)
+save(::JLD2Manager, path, data) = FileIO.save(path, data) # JLD2.@save 
+function save!(::JLD2Manager, path, data)
     try
         priorData = load(manager, path)
         merge!(priorData, data)
@@ -105,7 +100,7 @@ function save!(manager::Type{JLD2Manager}, path, data)
     end
 end
 
-load(manager::Type{JLD2Manager}, path) = FileIO.load(path)
+load(::JLD2Manager, path) = FileIO.load(path)
 
 # ===============
 # --- T O M L ---
@@ -113,13 +108,13 @@ load(manager::Type{JLD2Manager}, path) = FileIO.load(path)
 
 struct TOMLManager <: SaveManager end
 
-extension(manager::Type{TOMLManager}) = ".toml"
+extension(::TOMLManager) = ".toml"
 
-function save(manager::Type{TOMLManager}, path, data)
+function save(::TOMLManager, path, data)
     open(path) do io
         TOML.print(io, data)
     end
 end
 
-load(manager::Type{TOMLManager}, path) = TOML.parsefile(path)
+load(::TOMLManager, path) = TOML.parsefile(path)
 

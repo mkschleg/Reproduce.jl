@@ -16,7 +16,7 @@ const config_file = "examples/arg_iter_config.toml"
 
 function test_experiment()
 
-    experiment = Reproduce.parse_experiment_from_config(config_file) #Experiment(config_file)
+    experiment = Experiment(config_file)
 
     pre_experiment(experiment; tldr="hello tldr")
     ret = job(experiment; num_workers=6)

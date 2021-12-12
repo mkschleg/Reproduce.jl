@@ -7,18 +7,9 @@ struct ArgLooper{SA, SB, RI}  <: AbstractArgIter
     run_name::String
 end
 
-function ArgLooper(dict_list::Vector{<:Dict}, stable_arg::Dict, runs_iter, run_param)
+function ArgLooper(dict_list::Vector{<:Dict}, stable_arg::Dict, run_param, runs_iter)
     ArgLooper(dict_list, runs_iter, stable_arg, false, run_param)
 end
-
-function ArgLooper(str_list::Vector{Vector{String}}, stable_arg::Vector{String}, runs_iter, run_param)
-    @warn "Arg Looper w/ Arg Parse is depricated in favor of passing dictionaries around."
-    ArgLooper(str_list, runs_iter, stable_arg, false, run_param)
-end
-
-
-ArgLooper(list, stable_arg, runs_iter, run_name="--run") =
-    ArgLooper(list, runs_iter, stable_arg, false, run_name)
 
 set_save_dir!(iter::ArgLooper, path) = iter.stable_arg["save_dir"] = path
 

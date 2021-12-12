@@ -1,142 +1,179 @@
-using Logging
-using Reexport
 
-import JLD2
-@reexport using ArgParse
+# Parse experiment config toml.
 
+if VERSION > v"1.6"
+    using TOML
+else
+    using Pkg.TOML
+end
 
-
-const HASH_KEY="_HASH"
-const SAVE_NAME_KEY="_SAVE"
-const GIT_INFO_KEY="_GIT_INFO"
-
-make_save_name(hashed, git_info; head="RP") = "$(head)_$(git_info)_0x$(string(hashed,base=16))"
-
-get_save_dir(parsed::Dict) = parsed[keytype(parsed)(SAVE_NAME_KEY)]
-get_hash(parsed::Dict) = parsed[keytype(parsed)(HASH_KEY)]
-get_git_info(parsed::Dict) = parsed[keytype(parsed)(GIT_INFO_KEY)]
+using JSON
 
 
+
+#=
+get_save_backend
+=#
 """
-    create_info!
+    get_save_backend(cdict)
+
+Get the save_backend.
 """
-function create_info!(parsed_args::Dict,
-                      save_dir::String;
-                      filter_keys::Array{String,1} = Array{String,1}(),
-                      use_git_info = false,
-                      custom_folder_name = "RP",
-                      HASHER=hash,
-                      replace=true,
-                      settings_file="settings.jld2")
-
-    KEY_TYPE = keytype(parsed_args)
-
-    unused_keys = KEY_TYPE.(filter_keys)
-    hash_args = filter(k->(!(k[1] in unused_keys)), parsed_args)
-    used_keys=keys(hash_args)
-
-    hash_key = KEY_TYPE(HASH_KEY)
-    save_name_key = KEY_TYPE(SAVE_NAME_KEY)
-    git_info_key = KEY_TYPE(GIT_INFO_KEY)
-
-    hashed = HASHER(hash_args)
-    parsed_args[hash_key] = hashed
-
-    git_info = use_git_info ? git_head() : "0"
-    parsed_args[git_info_key] = git_info
-
-    save_name = joinpath(save_dir, make_save_name(hashed, git_info; head=custom_folder_name))
-    parsed_args[save_name_key] = save_name
-
-    save_settings_path = save_name
-
-    if !isdir(save_settings_path)
-        mkpath(save_settings_path)
+function get_save_backend(cdict)
+    if "save_backend" ∈ keys(cdict)
+        get_save_backend(Val(Symbol(cdict["save_backend"])), cdict)
+    elseif "database" ∈ keys(cdict)
+        get_save_type(Val(:mysql), cdict)
+    elseif "file_type" ∈ keys(cdict)
+        get_save_type(Val(:file), cdict)
     else
-        if replace
-            @warn "Hash Conflict in Reproduce create_info! Overwriting data."
-        else
-            @info "Told not to replace. Exiting Experiment."
-            throw("Hash Conflict.")
+        get_save_type(Val(:jld2), cdict)
+    end
+end
+
+function get_save_backend(::Val{:mysql}, cdict)
+    if "connection_file" ∈ keys(cdict)
+        SQLSave(cdict["database"], cdict["connection_file"])
+    else
+        SQLSave(cdict["database"])
+    end
+end
+
+function get_save_backend(::Val{:file}, cdict)
+    file_type = Symbol(cdict["file_type"])
+    FileSave(joinpath(cdict["save_dir"], "data"), SaveManager(file_type))
+end
+
+function get_save_backend(ft::Union{Val{:jld2}, Val{:hdf5}, Val{:bson}}, cdict)
+    FileSave(joinpath(cdict["save_dir"], "data"), SaveManager(ft))
+end
+
+
+
+#= #######
+
+get_arg_iter
+
+=# #######
+"""
+    get_arg_iter(cdict)
+    get_arg_iter(::Val{T}, cdict) where T
+
+get_arg_iter parses cdict to get the correct argument iterator. "arg_iter_type" needs to have a string value in the cdict (where the cdict is the config dict, often from a config file).
+Reproduce has two iterators:
+- T=:iter: ArgIterator which does a grid search over arguments
+- T=:looper: ArgLooper which loops over a vector of dictionaries which can be loaded from an arg_file.
+
+To implement a custom arg_iter you must implement `Reproduce.get_arg_iter(::Val{:symbol}, cdict)` where :symbol is the value arg_iter_type will take.
+"""
+function get_arg_iter(dict)
+    iter_type = dict["config"]["arg_iter_type"]
+    get_arg_iter(Val(Symbol(iter_type)), dict)
+end
+
+get_arg_iter(::Val{T}, cdict) where T = error("Can't parse $(T) from dict. Implement `get_arg_iter` for $(T).")
+
+function get_static_args(dict)
+
+    save_type = get_save_backend(dict["config"])
+    
+    static_args_dict = get(dict, "static_args", Dict{String, Any}())
+    static_args_dict[SAVE_NAME_KEY] = save_type
+    static_args_dict["save_dir"] = joinpath(dict["config"]["save_dir"], "data")
+
+    static_args_dict
+end
+
+function get_arg_iter(::Val{:iter}, dict)
+
+    static_args_dict = get_static_args(dict)
+    cdict = dict["config"]
+    
+    arg_order = get(cdict, "arg_list_order", nothing)
+
+    @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(dict["sweep_args"]))))
+    
+    sweep_args_dict = dict["sweep_args"]
+    
+    for key ∈ keys(sweep_args_dict)
+        if sweep_args_dict[key] isa String
+            sweep_args_dict[key] = eval(Meta.parse(sweep_args_dict[key]))
         end
     end
 
-    # settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
-    save_settings_file = joinpath(save_settings_path, settings_file)
-    JLD2.@save save_settings_file parsed_args used_keys
+    ArgIterator(sweep_args_dict,
+                static_args_dict,
+                arg_order=arg_order)
 end
 
-function create_info(arg_list::Vector{String},
-                     settings::ArgParseSettings,
-                     save_dir::AbstractString;
-                     filter_keys::Array{String,1} = Array{String,1}(),
-                     use_git_info = false,
-                     custom_folder_name = "RP",
-                     HASHER=hash,
-                     replace=true,
-                     settings_file="settings.jld2", kwargs...)
-    parsed = parse_args(arg_list, settings; kwargs...)
-    create_info!(parsed, save_dir;
-                 filter_keys=filter_keys,
-                 use_git_info=use_git_info,
-                 HASHER=HASHER,
-                 custom_folder_name=custom_folder_name,
-                 replace=replace,
-                 settings_file=settings_file)
-    return parsed
-end
+function get_arg_iter(::Val{:looper}, dict)
 
-
-function default_save_str(parsed, use_keys; save_dir="RP")
-    strs = collect(zip(
-        [string(key) for key in use_keys],
-        [string(parsed[key]) for key in use_keys]))
-    dir = joinpath(homedir, strs...)
-    return dir
-end
-
-function create_custom_info!(parsed_args::Dict,
-                             save_dir::String;
-                             use_keys::Array{String,1} = Array{String,1}(),
-                             make_save_str=default_save_str,
-                             replace=true,
-                             settings_file="settings.jld2")
-
-    KEY_TYPE = keytype(parsed_args)
-
-    save_name_key = KEY_TYPE(SAVE_NAME_KEY)
-    save_path = make_save_str(parsed_args, KEY_TYPE.(use_keys); save_dir=save_dir)
-    parsed_args[save_name_key] = save_path
-
-    if !isdir(save_path)
-        mkpath(save_path)
-    else
-        if replace
-            @warn "Dir Conflict in Reproduce parse_args! Overwriting data."
-        else
-            @info "Told not to replace. Exiting Experiment."
-            exit(0)
-        end
+    static_args_dict = get_static_args(dict)
+    cdict = dict["config"]
+    
+    args_dict_list = if "loop_args" ∈ keys(dict)
+        [dict["loop_args"][k] for k ∈ keys(dict["loop_args"])]
+    elseif "arg_file" ∈ keys(cdict)
+        d = FileIO.load(cdict["arg_file"])
+        d["args"]
     end
 
-    # settings_dict = Dict("parsed_args"=>parsed_args, "used_keys"=>used_keys)
-    save_settings_file = joinpath(save_path, settings_file)
-    JLD2.@save save_settings_file parsed_args used_keys
+    run_param = cdict["run_param"]
+    run_list = cdict["run_list"]
+
+    if run_list isa String
+        run_list = eval(Meta.parse(run_list))
+    end
+    
+    ArgLooper(args_dict_list, static_args_dict, run_param, run_list)
 end
 
-function create_custom_info(arg_list::Vector{String},
-                            settings::ArgParseSettings,
-                            save_dir::AbstractString;
-                            use_keys::Array{String,1} = Array{String,1}(),
-                            make_save_str=default_save_str,
-                            replace=true,
-                            settings_file="settings.jld2", kwargs...)
-    parsed = parse_args(arg_list, settings; kwargs...)
-    create_custom_info!(parsed, save_dir;
-                        use_keys=use_keys,
-                        make_save_str=make_save_str,
-                        replace=replace,
-                        settings_file=settings_file)
-    return parsed
+
+#=
+Experiment
+=#
+
+
+function parse_config_file(path)
+    ext = splitext(path)[end][2:end]
+    parse_config_file(Val(Symbol(ext)), path)
 end
+
+parse_config_file(::Val{ext}, path) where {ext} = throw(ErrorException("Experiment currently doesn't support $(ext) files."))
+parse_config_file(::Val{:toml}, path) = TOML.parsefile(path)
+parse_config_file(::Val{:json}, path) = JSON.Parser.parsefile(path)
+
+
+
+function parse_experiment_from_config(config_path, save_path=""; comp_env=get_comp_env())
+    
+    # need to deal with parsing config file.
+
+    dict = parse_config_file(config_path)
+    
+    cdict = dict["config"]
+
+    details_loc = joinpath(save_path, cdict["save_dir"])
+    cdict["save_dir"] = details_loc
+    
+    exp_file = cdict["exp_file"]
+    exp_module_name = cdict["exp_module_name"]
+    exp_func_name = cdict["exp_func_name"]
+
+    save_type = get_save_backend(cdict)
+    
+    arg_iter = get_arg_iter(dict)
+    
+    
+    Experiment(details_loc,
+               exp_file,
+               exp_module_name,
+               exp_func_name,
+               save_type,
+               arg_iter,
+               config_path;
+               comp_env=get_comp_env())
+end
+
+
 
