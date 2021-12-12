@@ -50,7 +50,7 @@ function test_args_loop_dict()
               (9, Dict(["c1"=>2, "seed"=> 5, "s1"=>"hello"])),
               (10, Dict(["c1"=>2, "seed"=> 6, "s1"=>"hello"]))]
 
-    arg_loop = ArgLooper([Dict(["c1"=>1]), Dict(["c1"=>2])], Dict(["s1"=>"hello"]), 2:6, "seed")
+    arg_loop = ArgLooper([Dict(["c1"=>1]), Dict(["c1"=>2])], Dict(["s1"=>"hello"]), "seed", 2:6)
     return all([answer[arg[1]] == arg for arg in arg_loop])
 end
 
