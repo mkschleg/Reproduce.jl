@@ -31,16 +31,20 @@ function get_save_backend(cdict)
     end
 end
 
-function get_save_type(::Val{:mysql}, cdict)
-    SQLSave(cdict["database"])
+function get_save_backend(::Val{:mysql}, cdict)
+    if "connection_file" ∈ keys(cdict)
+        SQLSave(cdict["database"], cdict["connection_file"])
+    else
+        SQLSave(cdict["database"])
+    end
 end
 
-function get_save_type(::Val{:file}, cdict)
+function get_save_backend(::Val{:file}, cdict)
     file_type = Symbol(cdict["file_type"])
     FileSave(joinpath(cdict["save_dir"], "data"), SaveManager(file_type))
 end
 
-function get_save_type(ft::Union{Val{:jld2}, Val{:hdf5}, Val{:bson}}, cdict)
+function get_save_backend(ft::Union{Val{:jld2}, Val{:hdf5}, Val{:bson}}, cdict)
     FileSave(joinpath(cdict["save_dir"], "data"), SaveManager(ft))
 end
 

@@ -125,11 +125,11 @@ end
 
 function create_database_and_tables(sql_save::SQLSave, exp::Experiment)
 
-    if :sql_infofile ∈ keys(kwargs)
-        dbm = DBManager(get(kwargs, "sql_infofile"))
-    else
-        dbm = DBManager()
-    end
+    # if :sql_infofile ∈ keys(kwargs)
+    # else
+    #     dbm = DBManager()
+    # end
+    dbm = DBManager(sql_save.connection_file)
 
     db_name = get_database_name(sql_save)
     # Create and switch to database. This checks to see if database exists before creating
@@ -141,15 +141,20 @@ function create_database_and_tables(sql_save::SQLSave, exp::Experiment)
     =#
     if !table_exists(dbm, get_param_table_name())
         # create params table
-        experiment_file = exp.JobMetadata.experiment_file
+        experiment_file = abspath(exp.job_metadata.file)
+        
         @everywhere begin
             include($experiment_file)
         end
-        example_prms = first(exp.arg_iter)
+        example_prms = first(exp.args_iter)[end]
 
-        create_param_table(dbm, params)
+        filter_keys = get_param_ignore_keys()
+        schema_args = filter(k->(!(k[1] in filter_keys)), example_prms)
+        
+        create_param_table(dbm, schema_args)
 
-        module_names = names(exp.job_metadata.module_name; all=true)
+        module_names = names(getfield(Main, exp.job_metadata.module_name); all=true)
+        
         if :get_result_type_dict ∈ module_names
             results_type_dicts = getfield(exp.job_metadata.module_name, :get_result_type_dict)
             rtd = results_type_dicts(example_prms) # Get results type dict.... How?

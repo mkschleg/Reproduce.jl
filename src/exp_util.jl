@@ -18,13 +18,16 @@ check_experiment_done(save_type::FileSave, savefile) =
     isfile(savefile) && check_save_file_loadable(save_type.manager, savefile)
 
 
-function check_experiment_done(save_type::SQLSave, save_setup_ret)
+function check_experiment_done(save_type::SQLSave, exp_hash)
 
     # hash
-    exp_hash = save_setup_ret.exp_hash
-    dbm = save_setup_ret.dbmanager
-
-    !isempty(select_row_where(dbm, get_results_table_name(), HASH_KEY, exp_hash))
+    exp_hash
+    connect!(save_type)
+    if table_exists(save_type.dbm, get_results_table_name())
+        !isempty(select_row_where(save_type.dbm, get_results_table_name(), HASH_KEY, exp_hash))
+    else
+        false
+    end
     
 end
 
@@ -37,12 +40,21 @@ function check_save_file_loadable(save_mgr, savefile)
     return true
 end
 
+post_save_setup(sqlsave::SQLSave) = close!(sqlsave)
+post_save_setup(args...) = nothing
+
+post_save_results(sqlsave::SQLSave) = close!(sqlsave)
+post_save_results(args...) = nothing
+
 function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], use_git_info=true, working=false)
 
     save_setup_ret = save_setup(parsed; filter_keys=filter_keys, use_git_info=use_git_info)
     if check_experiment_done(parsed, save_setup_ret)
+        post_save_setup(parsed[SAVE_KEY])
         return
     end
+
+    post_save_setup(parsed[SAVE_KEY])
 
     ret = exp_func(parsed)
 
@@ -53,6 +65,8 @@ function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], us
     else
         save_results(parsed[SAVE_KEY], save_setup_ret, ret)
     end
+    
+    post_save_results(parsed[SAVE_KEY])
     
 end
 

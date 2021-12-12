@@ -10,7 +10,7 @@ function main_experiment(parsed::Dict, extra_arg = nothing)
             throw("Oh No!!!")
         end
 
-        parsed
+        Dict("mean"=>0.1, "vec"=>rand(100))
         
     end
 

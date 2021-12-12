@@ -1,7 +1,7 @@
 
 
 import MySQL: MySQL, DBInterface
-import DBInterface: execute, connect
+import DBInterface: execute, connect, close!
 import DataFrames: DataFrame
 
 const SQLCONNECTIONFILE = joinpath(homedir(), "mysql_connection_info.toml")
@@ -25,6 +25,9 @@ function DBManager(infofile::String = SQLCONNECTIONFILE; database = "")
     dbm
 end
 
+Base.isopen(dbm::DBManager) = isopen(dbm.connection)
+Base.close(dbm::DBManager) = close(dbm.connection)
+
 execute(dbm::DBManager, args...) = execute(dbm.connection, args...)
 
 function show_tables(dbm)
@@ -33,20 +36,23 @@ end
 
 
 function database_exists(dbm::DBManager, db_name)
-    !isempty(execute(dbm, """SHOW DATABASES like '$(db_name)';"""))
+    cursor = execute(dbm, """SHOW DATABASES like '$(db_name)';""")
+    ret = !isempty(cursor)
+    close!(cursor)
+    ret
 end
 
 function switch_to_database(dbm::DBManager, db_name)
     if !database_exists(dbm, db_name)
         @error "Database doesn't exist yet. Try `create_and_switch_to_database`"
     end
-    execute(dbm, """USE $(db_name);""")
+    close!(execute(dbm, """USE $(db_name);"""))
 end
 
 function create_database(dbm::DBManager, db_name)
     if !database_exists(dbm, db_name)
         try
-            execute(dbm, """CREATE DATABASE $(db_name);""")
+            close!(execute(dbm, """CREATE DATABASE $(db_name);"""))
         catch err
             if !(err isa MySQL.API.Error && err.errno == 1007)
                 throw(err)
@@ -65,7 +71,10 @@ function create_and_switch_to_database(dbm::DBManager, db_name)
 end
 
 function table_exists(dbm::DBManager, tbl_name)
-    !isempty(execute(dbm, """SHOW TABLES like '$(tbl_name)';"""))
+    cursor = execute(dbm, """SHOW TABLES like '$(tbl_name)';""")
+    ret = !isempty(cursor)
+    close!(cursor)
+    ret
 end
 
 function create_table(dbm::DBManager, tbl_name, names, types)
@@ -76,7 +85,7 @@ function create_table(dbm::DBManager, tbl_name, names, types)
     end
 
     try
-        execute(dbm, sql)
+        close!(execute(dbm, sql))
     catch err
         if !(err isa MySQL.API.Error && err.errno == 1050)
             throw(err)
@@ -96,7 +105,7 @@ end
 
 function append_row(dbm::DBManager, tbl_name, names::String, values::String)
     sql = """INSERT INTO $(tbl_name) $(names) VALUES $(values)"""
-    execute(dbm, sql)
+    close!(execute(dbm, sql))
 end
 
 function append_row(dbm::DBManager, tbl_name, names::AbstractVector, values::AbstractVector)
@@ -156,7 +165,9 @@ function get_sql_schemas(params)
 
     names = String[]
     types = String[]
-    
+
+    @show ks
+    @show params
     for k in ks
         nm, typ = get_sql_schema(k, params[k])
         if nm isa Tuple
@@ -282,7 +293,10 @@ Select
 
 function select_row_where(dbm::DBManager, tblname, key::String, value)
     sql = """select * from $(tblname) where $(key)=$(value)"""
-    DataFrame(execute(dbm, sql))
+    cursor = execute(dbm, sql)
+    df = DataFrame(cursor)
+    close!(cursor)
+    df
 end
 
 

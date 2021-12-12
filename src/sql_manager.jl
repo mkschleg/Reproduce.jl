@@ -6,6 +6,8 @@ get_param_table_name() = "params"
 get_results_table_name() = "results"
 get_results_subtable_name(key) = "results_$(key)"
 
+get_param_ignore_keys() = [SAVE_KEY, "save_dir"]
+
 get_hash_type() = "BIGINT UNSIGNED UNIQUE"
 
 
@@ -28,6 +30,7 @@ function create_param_table(dbm::DBManager, params)
 end
 
 function get_param_schema(params)
+
     names, types = get_sql_schemas(params)
 
     if HASH_KEY ∉ names
@@ -115,7 +118,6 @@ end
 
 function save_params(dbm::DBManager, params; filter_keys = String[], use_git_info = true) # returns hash
 
-    # p_names, p_values = get_sql_schemas(params)
     p_names, p_values = get_sql_names_values(params)
 
     # hash key
