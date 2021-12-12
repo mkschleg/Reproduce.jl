@@ -4,7 +4,7 @@ import MySQL: MySQL, DBInterface
 import DBInterface: execute, connect, close!
 import DataFrames: DataFrame
 
-const SQLCONNECTIONFILE = joinpath(homedir(), "mysql_connection_info.toml")
+const SQLCONNECTIONFILE = joinpath(homedir(), ".mysql_connection_info.toml")
 
 struct DBManager
     connection::MySQL.Connection
