@@ -9,6 +9,9 @@ function main()
     @add_arg_table as begin
         "config"
         arg_type=String
+        "--path"
+        arg_type=String
+        default="results"
         "--numworkers"
         arg_type=Int
         default=4
@@ -17,7 +20,7 @@ function main()
     end
     parsed = parse_args(as)
     
-    experiment = Reproduce.parse_experiment_from_config(parsed["config"]) #Experiment(config_file)
+    experiment = Reproduce.parse_experiment_from_config(parsed["config"], parsed["path"])
 
     pre_experiment(experiment)
     ret = job(experiment; num_workers=parsed["numworkers"])

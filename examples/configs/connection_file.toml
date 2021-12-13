@@ -1,0 +1,4 @@
+# Setup a local mysql account without any configurations.
+host="localhost"
+user="root"
+password=""

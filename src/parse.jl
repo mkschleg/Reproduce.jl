@@ -21,11 +21,11 @@ function get_save_backend(cdict)
     if "save_backend" ∈ keys(cdict)
         get_save_backend(Val(Symbol(cdict["save_backend"])), cdict)
     elseif "database" ∈ keys(cdict)
-        get_save_type(Val(:mysql), cdict)
+        get_save_backend(Val(:mysql), cdict)
     elseif "file_type" ∈ keys(cdict)
-        get_save_type(Val(:file), cdict)
+        get_save_backend(Val(:file), cdict)
     else
-        get_save_type(Val(:jld2), cdict)
+        get_save_backend(Val(:jld2), cdict)
     end
 end
 
