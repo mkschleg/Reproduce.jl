@@ -68,6 +68,9 @@ function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], us
     
     post_save_results(parsed[SAVE_KEY])
     
+    if working
+        ret
+    end
 end
 
 
