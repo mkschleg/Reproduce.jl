@@ -4,21 +4,15 @@ import MySQL: MySQL, DBInterface
 import DBInterface: execute, connect, close!
 import DataFrames: DataFrame
 
-const SQLCONNECTIONFILE = joinpath(homedir(), ".mysql_connection_info.toml")
+const SQLCONNECTIONFILE = joinpath(homedir(), ".my.cnf")
 
 struct DBManager
     connection::MySQL.Connection
 end
 
 function DBManager(infofile::String = SQLCONNECTIONFILE; database = "")
-    connection_info = TOML.parsefile(infofile)
-    dbm = DBManager(
-        DBInterface.connect(
-            MySQL.Connection,
-            connection_info["host"],
-            connection_info["user"],
-            connection_info["password"])
-    )
+
+    dbm = DBInterface.connect(MySQL.Connection, "", ""; option_file=infofile)
     if database != ""
         create_and_switch_to_database(dbm, database)
     end
