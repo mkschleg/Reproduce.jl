@@ -12,7 +12,9 @@ end
 
 function DBManager(infofile::String = SQLCONNECTIONFILE; database = "")
 
-    dbm = DBInterface.connect(MySQL.Connection, "", ""; option_file=infofile)
+    dbm = DBManager(
+        DBInterface.connect(MySQL.Connection, "", ""; option_file=infofile)
+    )
     if database != ""
         create_and_switch_to_database(dbm, database)
     end
