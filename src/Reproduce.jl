@@ -69,12 +69,12 @@ include("args_looper.jl")
 
 
 export Experiment, create_experiment_dir, add_experiment, pre_experiment, post_experiment
-include("experiment_new.jl")
+include("experiment.jl")
 
 include("parse.jl")
 
 export job
-include("job_new.jl")
+include("job.jl")
 
 
 include("exp_util.jl")
