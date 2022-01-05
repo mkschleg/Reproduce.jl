@@ -63,21 +63,37 @@ include("experiment.jl")
 import Git
 
 function git_head()
-    s = if IN_SLURM()
-        read(`git rev-parse HEAD`, String)
-    else
-        read(`$(Git.git()) rev-parse HEAD`, String)
+    try
+        s = if IN_SLURM()
+            read(`git rev-parse HEAD`, String)
+        else
+            try
+                read(`$(Git.git()) rev-parse HEAD`, String)
+            catch
+                read(`git rev-parse HEAD`, String)
+            end
+        end
+        s[1:end-1]
+    catch
+        "0"
     end
-    s[1:end-1]
 end
 
 function git_branch()
-    s = if IN_SLURM()
-        read(`git rev-parse --symbolic-full-name --abbrev-ref HEAD`)
-    else
-        read(`$(Git.git()) rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
+    try
+        s = if IN_SLURM()
+            read(`git rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
+        else
+            try
+                read(`$(Git.git()) rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
+            catch
+                read(`git rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
+            end
+        end
+        s[1:end-1]
+    catch
+        "0"
     end
-    s[1:end-1]
 end
 
 include("parse.jl")
