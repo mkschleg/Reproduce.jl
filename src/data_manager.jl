@@ -96,7 +96,7 @@ function save!(::JLD2Manager, path, data)
         merge!(priorData, data)
         save(manager, path, priorData)
     catch
-        save(manager, path, data)
+        JLD2.@save savefile results
     end
 end
 
