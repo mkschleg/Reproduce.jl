@@ -89,16 +89,16 @@ struct JLD2Manager <: SaveManager end
 
 extension(::JLD2Manager) = ".jld2"
 
-save(::JLD2Manager, path, data) = FileIO.save(path, data) # JLD2.@save 
-function save!(::JLD2Manager, path, data)
-    try
-        priorData = load(manager, path)
-        merge!(priorData, data)
-        save(manager, path, priorData)
-    catch
-        JLD2.@save savefile results
-    end
-end
+save(::JLD2Manager, path, results) = JLD2.@save path results # JLD2.@save 
+# function save!(::JLD2Manager, path, data)
+#     try
+#         priorData = load(manager, path)
+#         merge!(priorData, data)
+#         save(manager, path, priorData)
+#     catch
+#         save(manager, path, data)
+#     end
+# end
 
 load(::JLD2Manager, path) = FileIO.load(path)
 
