@@ -1,17 +1,6 @@
 
 module Reproduce
 
-import Git
-
-function git_head()
-    s = read(`$(Git.git()) rev-parse HEAD`, String)
-    s[1:end-1]
-end
-
-function git_branch()
-    s = read(`$(Git.git()) rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
-    s[1:end-1]
-end
 
 function _safe_fileop(f::Function, check::Function)
     if check()
@@ -70,6 +59,26 @@ include("args_looper.jl")
 
 export Experiment, create_experiment_dir, add_experiment, pre_experiment, post_experiment
 include("experiment.jl")
+
+import Git
+
+function git_head()
+    s = if IN_SLURM()
+        read(`git rev-parse HEAD`, String)
+    else
+        read(`$(Git.git()) rev-parse HEAD`, String)
+    end
+    s[1:end-1]
+end
+
+function git_branch()
+    s = if IN_SLURM()
+        read(`git rev-parse --symbolic-full-name --abbrev-ref HEAD`)
+    else
+        read(`$(Git.git()) rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
+    end
+    s[1:end-1]
+end
 
 include("parse.jl")
 
