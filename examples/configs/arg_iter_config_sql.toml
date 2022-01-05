@@ -3,7 +3,6 @@
 [config]
 
 save_backend="mysql" # mysql only database backend supported
-connection_file="examples/connection_file.toml" # will default to ~/.mysql_connection_info.toml
 database="test_iter" # for params and resutsl
 save_dir="test_iter_sql" # for exceptions, settings, and more!
 
