@@ -38,13 +38,20 @@ end
 
 function save_setup(args::Dict; kwargs...)
 
-    if !(args[SAVE_KEY] isa String)
-        save_setup(args[SAVE_KEY], args; kwargs...)
-    else
-        # assume user save
-        @warn """Using key "$(SAVE_KEY)" as a string in args args is deprecated. Use new SaveTypes instead."""
+    if !(SAVE_KEY in keys(args)) # no save information!
+        if isinteractive()
+            @warn "No arg at \"$(SAVE_KEY)\". Assume testing in interactive" maxlog=1
+        else
+            @error "No arg found at $(SAVE_KEY). Something went wrong."
+        end
+    elseif args[SAVE_KEY] isa String
+        # assume file save
+        @warn """Using key "$(SAVE_KEY)" as a string in args args is deprecated. Use new SaveTypes instead.""" maxlog=1
+        save_dir = args[SAVE_KEY]
         fs = FileSave(save_dir, JLD2Manager())
         save_setup(fs, args; kwargs...)
+    else
+        save_setup(args[SAVE_KEY], args; kwargs...)
     end
     
 end
