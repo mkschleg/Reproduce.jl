@@ -50,19 +50,21 @@ post_save_results(::Nothing) = nothing
 
 function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], use_git_info=true)
 
-    if SAVE_KEY ∉ keys(parsed)
+    save_setup_ret = if SAVE_KEY ∉ keys(parsed)
         if isinteractive()
             @warn "No arg at \"$(SAVE_KEY)\". Assume testing in interactive" maxlog=1
             parsed[SAVE_KEY] = nothing
         else
             @error "No arg found at $(SAVE_KEY). Please use savetypes here."
         end
+        nothing
     else
         save_setup_ret = save_setup(parsed; filter_keys=filter_keys, use_git_info=use_git_info)
         if check_experiment_done(parsed, save_setup_ret)
             post_save_setup(parsed[SAVE_KEY])
             return
         end
+        save_setup_ret
     end
 
     post_save_setup(parsed[SAVE_KEY])

@@ -40,10 +40,10 @@ function save_setup(args::Dict; kwargs...)
 
     if args[SAVE_KEY] isa String
         # assume file save
-        @warn """Using key "$(SAVE_KEY)" as a string in args args is deprecated. Use new SaveTypes instead.""" maxlog=1
+        @warn """Using key "$(SAVE_KEY)" as a string in args is deprecated. Use new SaveTypes instead.""" maxlog=1
         save_dir = args[SAVE_KEY]
-        fs = FileSave(save_dir, JLD2Manager())
-        save_setup(fs, args; kwargs...)
+        args[SAVE_KEY] = FileSave(save_dir, JLD2Manager())
+        save_setup(args[SAVE_KEY], args; kwargs...)
     else
         save_setup(args[SAVE_KEY], args; kwargs...)
     end
