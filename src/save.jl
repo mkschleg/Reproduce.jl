@@ -1,5 +1,12 @@
 
 
+# const HASH_KEY="_HASH"
+# const SAVE_NAME_KEY="_SAVE"
+# const SAVE_KEY="_SAVE"
+# const GIT_INFO_KEY="_GIT_INFO"
+
+get_param_ignore_keys() = [SAVE_KEY, "save_dir"]
+
 struct FileSave
     save_dir::String
     manager::SaveManager
@@ -50,7 +57,7 @@ function save_setup(args::Dict; kwargs...)
     
 end
 
-function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_git_info=true)
+function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_git_info=true, hash_exclude_save_dir=true)
 
     save_dir = save_type.save_dir
 
@@ -58,7 +65,12 @@ function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_g
     
     KEY_TYPE = keytype(args)
 
-    filter_keys = [filter_keys; [SAVE_KEY]] # add SAVE_KEY to filter keys automatically.
+    filter_keys = if hash_exclude_save_dir
+        [filter_keys; [SAVE_KEY, "save_dir"]] # add SAVE_KEY to filter keys automatically.
+    else
+        @warn "hash_exclude_save_dir=false is deprecated due to hash consistency issues." maxlog=1
+        [filter_keys; [SAVE_KEY]] # add SAVE_KEY to filter keys automatically.
+    end
     unused_keys = KEY_TYPE.(filter_keys)
     hash_args = filter(k->(!(k[1] in unused_keys)), args)
     used_keys=keys(hash_args)
@@ -90,9 +102,16 @@ function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_g
     
 end
 
-function save_setup(save_type::SQLSave, args; filter_keys=String[], use_git_info=true) #filter_keys=String[], use_git_info=true)
+function save_setup(save_type::SQLSave, args; filter_keys=String[], use_git_info=true, hash_exclude_save_dir=true) #filter_keys=String[], use_git_info=true)
 
     connect!(save_type)
+
+    filter_keys = if hash_exclude_save_dir
+        [filter_keys; get_param_ignore_keys()] # add SAVE_KEY to filter keys automatically.
+    else
+        @warn "hash_exclude_save_dir=false is deprecated due to hash consistency issues." maxlog=1
+        [filter_keys; [SAVE_KEY]] # add SAVE_KEY to filter keys automatically.
+    end
     
     schema_args = filter(k->(!(k[1] in get_param_ignore_keys())), args)
     exp_hash = save_params(save_type.dbm,

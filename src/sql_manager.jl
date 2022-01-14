@@ -6,7 +6,7 @@ get_param_table_name() = "params"
 get_results_table_name() = "results"
 get_results_subtable_name(key) = "results_$(key)"
 
-get_param_ignore_keys() = [SAVE_KEY, "save_dir"]
+
 
 get_hash_type() = "BIGINT UNSIGNED UNIQUE"
 

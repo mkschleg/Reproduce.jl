@@ -48,7 +48,7 @@ post_save_results(sqlsave::SQLSave) = close!(sqlsave)
 post_save_results(args...) = nothing
 post_save_results(::Nothing) = nothing
 
-function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], use_git_info=true)
+function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], use_git_info=true, hash_exclude_save_dir=true)
 
     save_setup_ret = if SAVE_KEY ∉ keys(parsed)
         if isinteractive()
@@ -59,7 +59,11 @@ function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], us
         end
         nothing
     else
-        save_setup_ret = save_setup(parsed; filter_keys=filter_keys, use_git_info=use_git_info)
+        save_setup_ret = save_setup(parsed;
+                                    filter_keys=filter_keys,
+                                    use_git_info=use_git_info,
+                                    hash_exclude_save_dir=has_exclude_save_dir)
+        
         if check_experiment_done(parsed, save_setup_ret)
             post_save_setup(parsed[SAVE_KEY])
             return
