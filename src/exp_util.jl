@@ -62,7 +62,7 @@ function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], us
         save_setup_ret = save_setup(parsed;
                                     filter_keys=filter_keys,
                                     use_git_info=use_git_info,
-                                    hash_exclude_save_dir=has_exclude_save_dir)
+                                    hash_exclude_save_dir=hash_exclude_save_dir)
         
         if check_experiment_done(parsed, save_setup_ret)
             post_save_setup(parsed[SAVE_KEY])
