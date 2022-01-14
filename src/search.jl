@@ -23,7 +23,12 @@ function Item(settings_file::AbstractString)
     if "settings_dict" ∈ keys(dict)
         dict = dict["settings_dict"]
     end
-    parsed_args = dict["parsed_args"]
+    parsed_args = if "parsed_args" ∈ keys(dict)
+        @warn "Old style create_info! deprecated. Please update so key parsed_args = args." maxlog=1
+        dict["parsed_args"]
+    else
+        dict["args"]
+    end
     used_keys = dict["used_keys"]
     return Item(dirname(settings_file), parsed_args, used_keys)
 end

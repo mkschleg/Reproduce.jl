@@ -58,6 +58,7 @@ function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_g
     
     KEY_TYPE = keytype(args)
 
+    filter_keys = [filter_keys; [SAVE_KEY]] # add SAVE_KEY to filter keys automatically.
     unused_keys = KEY_TYPE.(filter_keys)
     hash_args = filter(k->(!(k[1] in unused_keys)), args)
     used_keys=keys(hash_args)
@@ -82,8 +83,8 @@ function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_g
         end
     end
 
-    # JLD2.@save save_settings_file args used_keys
-    save(save_type.manager, save_settings_file, Dict("args"=>args, "used_keys"=>used_keys))
+    JLD2.@save save_settings_file args used_keys
+    # save(save_type.manager, save_settings_file, Dict("args"=>args, "used_keys"=>used_keys))
 
     joinpath(save_path, "results" * extension(save_type.manager))
     
