@@ -42,25 +42,34 @@ end
 
 post_save_setup(sqlsave::SQLSave) = close!(sqlsave)
 post_save_setup(args...) = nothing
+post_save_setup(::Nothing) = nothing
 
 post_save_results(sqlsave::SQLSave) = close!(sqlsave)
 post_save_results(args...) = nothing
+post_save_results(::Nothing) = nothing
 
-function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], use_git_info=true, working=false)
+function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], use_git_info=true)
 
-    save_setup_ret = save_setup(parsed; filter_keys=filter_keys, use_git_info=use_git_info)
-    if check_experiment_done(parsed, save_setup_ret)
-        post_save_setup(parsed[SAVE_KEY])
-        return
+    if SAVE_KEY ∉ keys(parsed)
+        if isinteractive()
+            @warn "No arg at \"$(SAVE_KEY)\". Assume testing in interactive" maxlog=1
+            parsed[SAVE_KEY] = nothing
+        else
+            @error "No arg found at $(SAVE_KEY). Please use savetypes here."
+        end
+    else
+        save_setup_ret = save_setup(parsed; filter_keys=filter_keys, use_git_info=use_git_info)
+        if check_experiment_done(parsed, save_setup_ret)
+            post_save_setup(parsed[SAVE_KEY])
+            return
+        end
     end
 
     post_save_setup(parsed[SAVE_KEY])
 
     ret = exp_func(parsed)
 
-    if working
-        ret
-    elseif ret isa NamedTuple
+    if ret isa NamedTuple
         save_results(parsed[SAVE_KEY], save_setup_ret, ret.save_results)
     else
         save_results(parsed[SAVE_KEY], save_setup_ret, ret)
@@ -68,7 +77,7 @@ function experiment_wrapper(exp_func::Function, parsed; filter_keys=String[], us
     
     post_save_results(parsed[SAVE_KEY])
     
-    if working
+    if isinteractive()
         ret
     end
 end

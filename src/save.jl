@@ -38,13 +38,7 @@ end
 
 function save_setup(args::Dict; kwargs...)
 
-    if !(SAVE_KEY in keys(args)) # no save information!
-        if isinteractive()
-            @warn "No arg at \"$(SAVE_KEY)\". Assume testing in interactive" maxlog=1
-        else
-            @error "No arg found at $(SAVE_KEY). Something went wrong."
-        end
-    elseif args[SAVE_KEY] isa String
+    if args[SAVE_KEY] isa String
         # assume file save
         @warn """Using key "$(SAVE_KEY)" as a string in args args is deprecated. Use new SaveTypes instead.""" maxlog=1
         save_dir = args[SAVE_KEY]
@@ -95,11 +89,6 @@ function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_g
     
 end
 
-function save_results(save_type::FileSave, path, results)
-    save(save_type.manager, path, results)
-end
-
-
 function save_setup(save_type::SQLSave, args; filter_keys=String[], use_git_info=true) #filter_keys=String[], use_git_info=true)
 
     connect!(save_type)
@@ -114,6 +103,12 @@ function save_setup(save_type::SQLSave, args; filter_keys=String[], use_git_info
     exp_hash
 end
 
+
+save_results(::Nothing, args...; kwargs...) = nothing
+
+function save_results(save_type::FileSave, path, results)
+    save(save_type.manager, path, results)
+end
 
 function save_results(sqlsave::SQLSave, exp_hash, results)
     connect!(sqlsave)
