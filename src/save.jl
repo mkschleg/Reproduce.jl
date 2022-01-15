@@ -57,7 +57,10 @@ function save_setup(args::Dict; kwargs...)
     
 end
 
-function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_git_info=true, hash_exclude_save_dir=true)
+function save_setup(save_type::FileSave, args::Dict;
+                    filter_keys=String[],
+                    use_git_info=true,
+                    hash_exclude_save_dir=true)
 
     save_dir = save_type.save_dir
 
@@ -87,12 +90,6 @@ function save_setup(save_type::FileSave, args::Dict; filter_keys=String[], use_g
     
     if !isdir(save_settings_path)
         mkpath(save_settings_path)
-    else
-        if replace
-            @warn "Hash Conflict in Reproduce create_info! Overwriting data."
-        else
-            throw("Hash Conflict in Reproduce create_into. Told not to overwrite data.")
-        end
     end
 
     # JLD2.@save save_settings_file args used_keys

@@ -52,7 +52,8 @@ function experiment_wrapper(exp_func::Function, parsed;
                             filter_keys=String[],
                             use_git_info=true,
                             hash_exclude_save_dir=true,
-                            testing=false)
+                            testing=false,
+                            overwrite=false)
 
     save_setup_ret = if SAVE_KEY ∉ keys(parsed)
         if isinteractive()
@@ -68,7 +69,7 @@ function experiment_wrapper(exp_func::Function, parsed;
                                     use_git_info=use_git_info,
                                     hash_exclude_save_dir=hash_exclude_save_dir)
         
-        if check_experiment_done(parsed, save_setup_ret)
+        if check_experiment_done(parsed, save_setup_ret) && overwrite
             post_save_setup(parsed[SAVE_KEY])
             return
         end
