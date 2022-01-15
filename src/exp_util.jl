@@ -72,7 +72,7 @@ function experiment_wrapper(exp_func::Function, parsed;
                                     use_git_info=use_git_info,
                                     hash_exclude_save_dir=hash_exclude_save_dir)
         
-        if check_experiment_done(parsed, save_setup_ret) && overwrite
+        if check_experiment_done(parsed, save_setup_ret) && !overwrite
             post_save_setup(parsed[SAVE_KEY])
             return
         end
