@@ -56,8 +56,11 @@ function experiment_wrapper(exp_func::Function, parsed;
                             overwrite=false)
 
     save_setup_ret = if SAVE_KEY ∉ keys(parsed)
-        if isinteractive()
+        if isinteractive() 
             @warn "No arg at \"$(SAVE_KEY)\". Assume testing in repl." maxlog=1
+            parsed[SAVE_KEY] = nothing
+        elseif testing
+            @warn "No arg at \"$(SAVE_KEY)\". Testing Flag Set." maxlog=1
             parsed[SAVE_KEY] = nothing
         else
             @error "No arg found at $(SAVE_KEY). Please use savetypes here."
