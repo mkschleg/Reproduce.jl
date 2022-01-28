@@ -38,8 +38,8 @@ function get_save_backend(::Val{:mysql}, cdict)
 end
 
 function get_save_backend(::Val{:file}, cdict)
-    file_type = Symbol(cdict["file_type"])
-    FileSave(joinpath(cdict["save_dir"], "data"), SaveManager(file_type))
+    file_type = Val(Symbol(cdict["file_type"]))
+    get_save_backend(file_type, cdict)
 end
 
 function get_save_backend(ft::Union{Val{:jld2}, Val{:hdf5}, Val{:bson}}, cdict)
