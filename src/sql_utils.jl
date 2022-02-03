@@ -268,6 +268,8 @@ get_sql_type(::Type{UInt32}) = "INT UNSIGNED"
 
 get_sql_type(::Type{<:AbstractString}) = "VARCHAR(100)"
 
+get_sql_type(::Type{Bool}) = "BOOLEAN"
+
 
 """
     get_sql_value(x)
