@@ -126,7 +126,8 @@ function save_params(dbm::DBManager, params; filter_keys = String[], use_git_inf
     push!(p_values, "$(pms_hash)")
 
     # git_info
-    git_info = use_git_info ? git_head() : "0"
+    # git_info = use_git_info ? git_head() : "0"
+    git_info = git_head()
     push!(p_names, GIT_INFO_KEY)
     push!(p_values, git_info)
     
