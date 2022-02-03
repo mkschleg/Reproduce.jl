@@ -68,7 +68,7 @@ function create_results_tables(dbm::DBManager, results)
     for k in keys(results)
         if results[k] isa AbstractVector
             # Do crazy things...
-            push!(names, k)
+            push!(names, string(k))
             push!(types, "BOOLEAN NOT NULL DEFAULT 0")
 
             # create table
@@ -76,14 +76,14 @@ function create_results_tables(dbm::DBManager, results)
 
         elseif results[k] isa DataType && results[k] <: AbstractVector
 
-            push!(names, k)
+            push!(names, string(k))
             push!(types, "BOOLEAN NOT NULL DEFAULT 0")
             
             create_results_subtable(dbm, k, results[k].parameters[1])
             
         else # add to types
 
-            nms, dtys = get_sql_schema(k, results[k])
+            nms, dtys = get_sql_schema(string(k), results[k])
             append!(names, nms isa String ? [nms] : nms)
             append!(types, dtys isa String ? [dtys] : dtys)
             
