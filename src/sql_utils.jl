@@ -162,8 +162,6 @@ function get_sql_schemas(params)
     names = String[]
     types = String[]
 
-    @show ks
-    @show params
     for k in ks
         nm, typ = get_sql_schema(k, params[k])
         if nm isa Tuple

@@ -119,7 +119,8 @@ end
 function save_params(dbm::DBManager, params; filter_keys = String[], use_git_info = true) # returns hash
 
     p_names, p_values = get_sql_names_values(params)
-
+    
+    
     # hash key
     pms_hash = hash_params(params; filter_keys=filter_keys)
     push!(p_names, HASH_KEY)
@@ -130,8 +131,12 @@ function save_params(dbm::DBManager, params; filter_keys = String[], use_git_inf
     git_info = git_head()
     push!(p_names, GIT_INFO_KEY)
     push!(p_values, git_info)
-    
-    append_row(dbm, get_param_table_name(), p_names, p_values)
+
+    # check if params exist before saving
+    # connect!(save_type)
+    if table_exists(dbm, get_param_table_name()) && isempty(select_row_where(dbm, get_param_table_name(), HASH_KEY, pms_hash))
+        append_row(dbm, get_param_table_name(), p_names, p_values)
+    end # else this parameter setting already exists, and should be left alone.
 
     pms_hash
 end
