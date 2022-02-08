@@ -23,7 +23,7 @@ SQLSave(database, connection_file=SQLCONNECTIONFILE) = SQLSave(database, connect
 get_database_name(sql_save::SQLSave) = sql_save.database
 
 function connect!(sqlsave::SQLSave)
-    if isnothing(sqlsave.dbm) || MySQL.isopen(sqlsave.dbm)
+    if isnothing(sqlsave.dbm) || !Base.isopen(sqlsave.dbm)
         while true
             try
                 sqlsave.dbm = DBManager(sqlsave.connection_file; database=sqlsave.database)
@@ -116,6 +116,7 @@ function save_setup(save_type::SQLSave, args; filter_keys=String[], use_git_info
                            filter_keys=get_param_ignore_keys(),
                            use_git_info=use_git_info)
 
+    # close!(save_type)
     
     exp_hash
 end
@@ -132,6 +133,8 @@ function save_results(sqlsave::SQLSave, exp_hash, results)
     if !table_exists(sqlsave.dbm, get_results_table_name())
         create_results_tables(sqlsave.dbm, results)
     end
-    save_results(sqlsave.dbm, exp_hash, results)
+    ret = save_results(sqlsave.dbm, exp_hash, results)
+    # close!(save_type)
+    ret
 end
 

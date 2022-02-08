@@ -210,6 +210,7 @@ function parallel_job(
     done_jobs = finished_jobs_arr
 
     @info "Number of Jobs left: $(n - sum(done_jobs))/$(n)"
+    num_jobs_left = n - sum(done_jobs)
 
     if all(done_jobs)
         @info "All jobs finished!"
@@ -262,7 +263,7 @@ function parallel_job(
             @info "Experiment built on process $(myid())"
         end
 
-        pgm = ProgressMeter.Progress(length(args_iter))
+        pgm = ProgressMeter.Progress(num_jobs_left)
 
         @sync begin
             @async while Distributed.take!(prg_channel)
@@ -286,8 +287,8 @@ function parallel_job(
                         if finished
                             Distributed.put!(job_id_channel, job_id)
                         end
+                        Distributed.put!(prg_channel, true)
                     end
-                    Distributed.put!(prg_channel, true)
                     yield()
                 end
                 Distributed.put!(prg_channel, false)
