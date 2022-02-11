@@ -95,17 +95,31 @@ function create_results_tables(dbm::DBManager, results)
     
 end
 
-function create_results_subtable(dbm::DBManager, key, eltype)
+function create_results_subtable(dbm::DBManager, key, elt)
 
     tbl_name = get_results_subtable_name(key)
     if table_exists(dbm, tbl_name)
         return
     end
     
-    create_table(dbm, tbl_name;
-                 (Symbol(HASH_KEY)=>UInt,)...,
-                 step=UInt,
-                 data=eltype)
+    create_vector_table(dbm, tbl_name, elt)
+
+end
+
+function create_vector_table(dbm::DBManager, tbl_name, data_elt::DataType)
+
+    # creates table in current db.
+    sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
+    
+    try
+        close!(execute(dbm, sql))
+    catch err
+        if !(err isa MySQL.API.Error && err.errno == 1050)
+            throw(err)
+        else
+            sleep(1)
+        end
+    end
 
 end
 
