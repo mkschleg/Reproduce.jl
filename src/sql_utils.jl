@@ -164,7 +164,7 @@ function get_sql_schemas(params)
 
     for k in ks
         nm, typ = get_sql_schema(k, params[k])
-        if nm isa Tuple
+        if nm isa Tuple or nm isa AbstractVector
             append!(names, nm)
             append!(types, typ)
         else
