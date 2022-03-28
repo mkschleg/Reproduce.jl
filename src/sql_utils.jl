@@ -252,7 +252,7 @@ end
 
 function get_sql_type(dict::AbstractDict)
     ks = sort(collect(keys(dict)))
-    (get_sql_type(x) for x in dict[ks])
+    (get_sql_type(dict[k]) for x in ks)
 end
 
 get_sql_type(::Type{Float32}) = "FLOAT"
