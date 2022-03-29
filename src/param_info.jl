@@ -1,8 +1,6 @@
 using Logging
-using Reexport
-
 import JLD2
-@reexport using ArgParse
+# @reexport using ArgParse
 
 const HASH_KEY="_HASH"
 const SAVE_NAME_KEY="_SAVE"
@@ -111,19 +109,19 @@ function create_custom_info!(parsed_args::Dict,
     JLD2.@save save_settings_file parsed_args used_keys
 end
 
-function create_custom_info(arg_list::Vector{String},
-                            settings::ArgParseSettings,
-                            save_dir::AbstractString;
-                            use_keys::Array{String,1} = Array{String,1}(),
-                            make_save_str=default_save_str,
-                            replace=true,
-                            settings_file="settings.jld2", kwargs...)
-    parsed = parse_args(arg_list, settings; kwargs...)
-    create_custom_info!(parsed, save_dir;
-                        use_keys=use_keys,
-                        make_save_str=make_save_str,
-                        replace=replace,
-                        settings_file=settings_file)
-    return parsed
-end
+# function create_custom_info(arg_list::Vector{String},
+#                             settings::ArgParseSettings,
+#                             save_dir::AbstractString;
+#                             use_keys::Array{String,1} = Array{String,1}(),
+#                             make_save_str=default_save_str,
+#                             replace=true,
+#                             settings_file="settings.jld2", kwargs...)
+#     parsed = parse_args(arg_list, settings; kwargs...)
+#     create_custom_info!(parsed, save_dir;
+#                         use_keys=use_keys,
+#                         make_save_str=make_save_str,
+#                         replace=replace,
+#                         settings_file=settings_file)
+#     return parsed
+# end
 

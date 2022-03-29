@@ -41,7 +41,6 @@ include("search.jl")
 export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
 include("data_manager.jl")
 
-
 # SQL Management...
 include("sql_utils.jl")
 include("sql_manager.jl")
@@ -49,8 +48,6 @@ include("sql_manager.jl")
 include("save.jl")
 
 abstract type AbstractArgIter end
-
-
 
 export ArgIterator, ArgLooper
 include("args_iter.jl")
@@ -100,7 +97,6 @@ include("parse.jl")
 
 export job
 include("job.jl")
-
 
 include("exp_util.jl")
 

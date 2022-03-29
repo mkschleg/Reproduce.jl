@@ -2,7 +2,7 @@
 
 [config]
 save_dir="test_loc_loop"
-exp_file="examples/experiment.jl"
+exp_file="experiment.jl"
 exp_module_name = "Main"
 exp_func_name = "main_experiment"
 arg_iter_type = "looper"
