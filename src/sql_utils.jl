@@ -164,7 +164,7 @@ function get_sql_schemas(params)
 
     for k in ks
         nm, typ = get_sql_schema(k, params[k])
-        if nm isa Tuple or nm isa AbstractVector
+        if nm isa Tuple || nm isa AbstractVector
             append!(names, nm)
             append!(types, typ)
         else
@@ -184,9 +184,9 @@ function get_sql_names_values(params)
 
     for k in ks
         nm, value = get_sql_name_value(k, params[k])
-        if nm isa Tuple
-            push!(names, nm...)
-            push!(values, value...)
+        if nm isa Tuple || nm isa AbstractVector
+            append!(names, nm)
+            append!(values, value)
         else
             push!(names, nm)
             push!(values, value)
@@ -203,8 +203,59 @@ function get_sql_schema(name, param)
     get_sql_name(name, param), get_sql_type(param)
 end
 
+function get_sql_schema(name, param::Union{AbstractDict, NamedTuple})
+    # get_sql_name(name, param), get_sql_type(param)
+    names, types = get_sql_schemas(param)
+    names = [name * "_" * nm for nm in names]
+    names, types
+end
+
+function get_sql_schema(name, param::Union{Tuple, AbstractVector})
+
+    names = String[]
+    types = String[]
+    
+    for i in 1:length(param)
+        nm, typ = get_sql_schema("$(i)", param[i])
+        if nm isa Tuple || nm isa AbstractVector
+            append!(names, nm)
+            append!(types, typ)
+        else
+            push!(names, nm)
+            push!(types, typ)
+        end
+    end
+    names = [name * "_" * nm for nm in names]
+    names, types
+end
+
 function get_sql_name_value(name, param)
     get_sql_name(name, param), get_sql_value(param)
+end
+
+function get_sql_name_value(name, param::AbstractDict)
+    names, values = get_sql_names_values(param)
+    names = [name * "_" * nm for nm in names]
+    names, values
+end
+
+function get_sql_name_value(name, param::Union{Tuple, AbstractVector})
+
+    names = String[]
+    types = []
+    
+    for i in 1:length(param)
+        nm, typ = get_sql_name_value("$(i)", param[i])
+        if nm isa Tuple || nm isa AbstractVector
+            append!(names, nm)
+            append!(types, typ)
+        else
+            push!(names, nm)
+            push!(types, typ)
+        end
+    end
+    names = [name * "_" * nm for nm in names]
+    names, types
 end
 
 
@@ -223,15 +274,6 @@ where the props are sorted.
 """
 get_sql_name(name, param) = string(name)
 
-function get_sql_name(name, param::Union{Tuple, Vector})
-    ("$(name)_$(i)" for i in 1:length(param))
-end
-
-function get_sql_name(name, param::Union{NamedTuple, AbstractDict})
-    ks = sort(collect(keys(param)))
-    ("$(name)_$(k)" for k in ks)
-end
-
 
 """
     get_sql_type(x)
@@ -241,19 +283,6 @@ Return the corresponding SQL Type. This is to be used for params.
 get_sql_type(x) = get_sql_type(typeof(x))
 get_sql_type(x::DataType) = @error "Type $(x) not supported. Please implement Reproduce.get_sql_type"
 
-function get_sql_type(tpl::Union{Tuple, Vector})
-    (get_sql_type(x) for x in tpl)
-end
-
-function get_sql_type(ntpl::NamedTuple)
-    ks = sort(collect(keys(ntpl)))
-    (get_sql_type(x) for x in ntpl[ks])
-end
-
-function get_sql_type(dict::AbstractDict)
-    ks = sort(collect(keys(dict)))
-    (get_sql_type(dict[k]) for x in ks)
-end
 
 get_sql_type(::Type{Float32}) = "FLOAT"
 get_sql_type(::Type{Float64}) = "DOUBLE"

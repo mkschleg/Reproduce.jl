@@ -90,9 +90,7 @@ function create_results_tables(dbm::DBManager, results)
         end
     end
 
-    # names, types
     create_table(dbm, tbl_name, names, types)
-    
 end
 
 function create_results_subtable(dbm::DBManager, key, elt)
