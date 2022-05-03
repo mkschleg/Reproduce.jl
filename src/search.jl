@@ -54,6 +54,7 @@ function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data
     d = joinpath(dir, "item_col.jld2")
     id = hash(string(dir_list))
     if isfile(d)
+        @info "Loading from $(d)"
         ic = FileIO.load(d)["ic"]
         if ic.dir_hash == id
             return ic

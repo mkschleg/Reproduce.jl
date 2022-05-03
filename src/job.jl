@@ -150,27 +150,15 @@ function parallel_job(
     verbose=false,
     skip_exceptions=false,
     expand_args=false)
-    
-    # experiment_file::AbstractString,
-    # exp_dir::AbstractString,
-    # args_iter;
-    # exp_module_name::Union{String, Symbol}=:Main,
-    # exp_func_name::Union{String, Symbol}=:main_experiment,
-    # num_workers=Sys.CPU_THREADS - 1,
-    # project=".",
-    # extra_args=[],
-    # exception_dir="except",
-    # job_file_dir="",
-    # checkpoint_name="",
-    # store_exceptions=true,
-    # verbose=false,
-    # skip_exceptions=false,
-    # expand_args=false)
 
+    
     job_md = experiment.job_metadata
     metadata = experiment.metadata
+
     comp_env = metadata.comp_env
     exp_dir = metadata.details_loc
+
+    save_back_end = metadata.save_type
 
     args_iter = experiment.args_iter
     
@@ -279,7 +267,11 @@ function parallel_job(
             @sync begin
                 robust_pmap(args_iter) do (job_id, args)
                     if !checkpointing || !done_jobs[job_id]
-                        finished = run_experiment(Main.RP_exp_func, job_id, args, extra_args, exception_dir;
+                        finished = run_experiment(Main.RP_exp_func,
+                                                  job_id,
+                                                  args,
+                                                  extra_args,
+                                                  exception_dir;
                                                   expand_args=expand_args,
                                                   verbose=verbose,
                                                   store_exceptions=store_exceptions,
@@ -312,7 +304,9 @@ function parallel_job(
     end
 end
 
-
+function task_job(exp::Experiments; kwargs...)
+    throw("Task job not quite implemented yet...")
+end
 
 function task_job(experiment_file::AbstractString,
                   exp_dir::AbstractString,

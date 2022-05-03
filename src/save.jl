@@ -57,6 +57,8 @@ function save_setup(args::Dict; kwargs...)
     
 end
 
+save_setup(::Nothing, args...; kwargs...) = nothing
+
 function save_setup(save_type::FileSave, args::Dict;
                     filter_keys=String[],
                     use_git_info=true,
