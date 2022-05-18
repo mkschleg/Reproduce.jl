@@ -119,8 +119,11 @@ function run_experiment(exp_func,
             end
             if store_exceptions
                 save_exception(
+                    args,
                     joinpath(exception_loc, "job_$(job_id).exc"),
-                    job_id, ex, stacktrace(catch_backtrace()))
+                    job_id,
+                    ex,
+                    stacktrace(catch_backtrace()))
             end
             return false
         end
@@ -304,7 +307,7 @@ function parallel_job(
     end
 end
 
-function task_job(exp::Experiments; kwargs...)
+function task_job(exp::Experiment; kwargs...)
     throw("Task job not quite implemented yet...")
 end
 

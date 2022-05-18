@@ -222,8 +222,28 @@ end
 
 @deprecate exception_file(args...) save_exception(args...)
 
+
+function save_exception(config, exc_file, job_id, exception, trace)
+
+    if isfile(exc_file)
+        @warn "$(exc_file) already exists. Overwriting..."
+    end
+
+    open(exc_file, "w") do f
+        exception_string = "Exception for job_id: $(job_id)\n\n"
+        exception_string *= "Config: \n" * string(config) * "\n\n"
+        exception_string *= "Exception: \n" * string(exception) * "\n\n"
+
+        write(f, exception_string)
+        Base.show_backtrace(f, trace)
+    end
+
+    return
+end
+
 function save_exception(exc_file, job_id, exception, trace)
 
+    @warn "Please pass config to exception." maxlog=1
     if isfile(exc_file)
         @warn "$(exc_file) already exists. Overwriting..."
     end
