@@ -56,7 +56,8 @@ function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data
     if isfile(d)
         @info "Loading from $(d)"
         ic = FileIO.load(d)["ic"]
-        if ic.dir_hash == id
+        rd = get(FileIO.load(d), "rd", "")
+        if (ic.dir_hash == id) && (dir == rd)
             return ic
         end
     end
@@ -70,7 +71,7 @@ function ItemCollection(dir::AbstractString; settings_file="settings.jld2", data
 
 
     ic = ItemCollection(items, id)
-    FileIO.save(d, "ic", ic)
+    FileIO.save(d, "ic", ic, "rd", dir)
     
     return ic
 end
