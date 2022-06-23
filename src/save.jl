@@ -87,6 +87,9 @@ function save_setup(save_type::FileSave, args::Dict;
     git_info = use_git_info ? git_head() : "0"
     save_path = joinpath(save_dir, make_save_name(hashed, git_info))
 
+    args[hash_key] = hashed
+    args[git_info_key] = git_info
+    
     save_settings_path = save_path
     save_settings_file = joinpath(save_settings_path, settings_file)
     

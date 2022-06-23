@@ -107,7 +107,11 @@ end
 function create_vector_table(dbm::DBManager, tbl_name, data_elt::DataType)
 
     # creates table in current db.
-    sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
+    sql = if data_elt <: Vector
+        sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(eltype(data_elt))), step_1 INT UNSIGNED, step_2 INT UNSIGNED, INDEX (_HASH));"""
+    else
+        sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
+    end
     
     try
         close!(execute(dbm, sql))
@@ -205,10 +209,23 @@ end
 function save_sub_results(dbm::DBManager, pms_hash, key, results)
 
     tbl_name = get_results_subtable_name(key)
-    for (idx, v) in enumerate(results)
-        names = "(" * HASH_KEY * ", " * "step, data)"
-        values = "($(pms_hash), $(idx), $(v))"
-        append_row(dbm, tbl_name, names, values)
+
+    if eltype(results) <: AbstractVector
+        for (i, vec) in enumerate(results)
+            for (j, v) in enumerate(vec)
+                names = "(" * HASH_KEY * ", " * "step_1, step_2, data)"
+                values = "($(pms_hash), $(i), $(j), $(v))"
+                append_row(dbm, tbl_name, names, values)
+            end
+        end
+    else
+        for (idx, v) in enumerate(results)
+            names = "(" * HASH_KEY * ", " * "step, data)"
+            values = "($(pms_hash), $(idx), $(v))"
+            append_row(dbm, tbl_name, names, values)
+        end
     end
+
+    
     
 end
