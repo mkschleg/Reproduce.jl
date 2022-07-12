@@ -51,6 +51,7 @@ abstract type AbstractArgIter end
 
 export ArgIterator, ArgLooper
 include("args_iter.jl")
+include("args_iter_v2.jl")
 include("args_looper.jl")
 
 
