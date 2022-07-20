@@ -10,7 +10,10 @@ function main_experiment(parsed::Dict, extra_arg = nothing)
             throw("Oh No!!!")
         end
 
-        Dict("mean"=>0.1, "vec"=>rand(100))
+        Dict("mean"=>0.1,
+             "vec"=>rand(100),
+             "mat"=>rand(10, 10),
+             "vec_vec"=>[rand(10) for _ in 1:10])
         
     end
 

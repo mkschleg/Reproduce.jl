@@ -72,7 +72,7 @@ function create_results_tables(dbm::DBManager, results)
             push!(types, "BOOLEAN NOT NULL DEFAULT 0")
 
             # create table
-            create_results_subtable(dbm, k, eltype(results[k]))
+            create_results_subtable(dbm, k, results[k])
 
         # elseif results[k] isa AbstractMatrix
 
@@ -120,7 +120,7 @@ function get_array_table_sql_statement(tbl_name, data::AbstractVector)
     """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
 end
 
-function get_array_table_sql_statement(tbl_name, data::AbstractVector{V}) where {F<:AbstractVector}
+function get_array_table_sql_statement(tbl_name, data::AbstractVector{V}) where {V<:AbstractVector}
     data_elt = eltype(data)
     """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(eltype(data_elt))), step_1 INT UNSIGNED, step_2 INT UNSIGNED, INDEX (_HASH));"""
 end
@@ -192,7 +192,7 @@ function save_results(dbm::DBManager, pms_hash, results)
 
     ks = collect(keys(results))
     for k in ks
-        if results[k] isa AbstractVector
+        if results[k] isa AbstractArray
 
             # save to sub table
             save_sub_results(dbm, pms_hash, k, results[k])
@@ -234,26 +234,40 @@ function save_results(dbm::DBManager, pms_hash, results)
 end
 
 
-function save_sub_results(dbm::DBManager, pms_hash, key, results)
+function save_sub_results(dbm::DBManager, pms_hash, key, results::AbstractVector)
+    tbl_name = get_results_subtable_name(key)
+    for (idx, v) in enumerate(results)
+        names = "(" * HASH_KEY * ", " * "step, data)"
+        values = "($(pms_hash), $(idx), $(v))"
+        append_row(dbm, tbl_name, names, values)
+    end
+end
 
+function save_sub_results(dbm::DBManager, pms_hash, key, results::AbstractMatrix)
     tbl_name = get_results_subtable_name(key)
 
-    if eltype(results) <: AbstractVector
-        for (i, vec) in enumerate(results)
-            for (j, v) in enumerate(vec)
-                names = "(" * HASH_KEY * ", " * "step_1, step_2, data)"
-                values = "($(pms_hash), $(i), $(j), $(v))"
-                append_row(dbm, tbl_name, names, values)
-            end
-        end
-    else
-        for (idx, v) in enumerate(results)
-            names = "(" * HASH_KEY * ", " * "step, data)"
-            values = "($(pms_hash), $(idx), $(v))"
+    for (i, j) in Iterators.product(1:size(results, 1), 1:size(results, 2))
+        v = results[i, j]
+        names = "(" * HASH_KEY * ", " * "step_1, step_2, data)"
+        values = "($(pms_hash), $(i), $(j), $(v))"
+        append_row(dbm, tbl_name, names, values)
+    end
+
+end
+
+function save_sub_results(dbm::DBManager, pms_hash, key, results::AbstractVector{V}) where {V<:AbstractVector}
+    tbl_name = get_results_subtable_name(key)
+    for (i, vec) in enumerate(results)
+        for (j, v) in enumerate(vec)
+            names = "(" * HASH_KEY * ", " * "step_1, step_2, data)"
+            values = "($(pms_hash), $(i), $(j), $(v))"
             append_row(dbm, tbl_name, names, values)
         end
     end
-
-    
-    
 end
+
+function save_sub_results(dbm::DBManager, pms_hash, key, results)
+    @error "save_sub_results not implemented for $(typeof(results))"
+end
+
+
