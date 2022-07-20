@@ -66,7 +66,7 @@ function create_results_tables(dbm::DBManager, results)
     push!(types, get_hash_type())
     
     for k in keys(results)
-        if results[k] isa AbstractVector
+        if results[k] isa AbstractArray
             # Do crazy things...
             push!(names, string(k))
             push!(types, "BOOLEAN NOT NULL DEFAULT 0")
@@ -74,12 +74,19 @@ function create_results_tables(dbm::DBManager, results)
             # create table
             create_results_subtable(dbm, k, eltype(results[k]))
 
-        elseif results[k] isa DataType && results[k] <: AbstractVector
+        # elseif results[k] isa AbstractMatrix
 
-            push!(names, string(k))
-            push!(types, "BOOLEAN NOT NULL DEFAULT 0")
+        #     push!(names, string(k))
+        #     push!(types, "BOOLEAN NOT NULL DEFAULT 0")
             
-            create_results_subtable(dbm, k, results[k].parameters[1])
+        #     create_results_subtable(dbm, k, eltype(results[k]))
+
+        # elseif results[k] isa DataType && results[k] <: AbstractVector
+
+        #     push!(names, string(k))
+        #     push!(types, "BOOLEAN NOT NULL DEFAULT 0")
+            
+        #     create_results_subtable(dbm, k, results[k].parameters[1])
             
         else # add to types
 
@@ -100,18 +107,39 @@ function create_results_subtable(dbm::DBManager, key, elt)
         return
     end
     
-    create_vector_table(dbm, tbl_name, elt)
+    create_array_table(dbm, tbl_name, elt)
 
 end
 
-function create_vector_table(dbm::DBManager, tbl_name, data_elt::DataType)
+# function get_array_table_sql_statement(tbl_name, data)
+#     """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
+# end
 
-    # creates table in current db.
-    sql = if data_elt <: Vector
-        sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(eltype(data_elt))), step_1 INT UNSIGNED, step_2 INT UNSIGNED, INDEX (_HASH));"""
-    else
-        sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
+function get_array_table_sql_statement(tbl_name, data::AbstractVector)
+    data_elt = eltype(data)
+    """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(data_elt)), step INT UNSIGNED, INDEX (_HASH));"""
+end
+
+function get_array_table_sql_statement(tbl_name, data::AbstractVector{V}) where {F<:AbstractVector}
+    data_elt = eltype(data)
+    """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(eltype(data_elt))), step_1 INT UNSIGNED, step_2 INT UNSIGNED, INDEX (_HASH));"""
+end
+
+function get_array_table_sql_statement(tbl_name, data::AbstractArray)
+    data_elt = eltype(data)
+
+    @assert !(data_elt <: AbstractArray) || "Can't have multidimensional array with array internals"
+
+    sql = """CREATE TABLE $(tbl_name) (_HASH BIGINT UNSIGNED, data $(get_sql_type(eltype(data))), """
+    for i in 1:ndims(data)
+        sql *= "step_$(i) INT UNSIGNED, "
     end
+    sql *= "INDEX (_HASH));"
+end
+
+function create_array_table(dbm::DBManager, tbl_name, data)
+
+    sql = get_array_table_sql_statement(tbl_name, data)
     
     try
         close!(execute(dbm, sql))
