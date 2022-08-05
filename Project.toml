@@ -1,7 +1,7 @@
 name = "Reproduce"
 uuid = "560a9c3a-0b8c-11e9-0329-d39dfcb85ed2"
 authors = ["Matt <mkschleg@gmail.com>"]
-version = "0.12.3-dev"
+version = "0.12.3"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
