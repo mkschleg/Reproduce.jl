@@ -27,6 +27,11 @@ arg_1+arg_2 = [[1,1], [2,2], [3,3]]
 
 produces a set of 360 argument settings. The seed parameter is straight forward, where the iterator iterates over the list. `eta`'s string will be parsed by the julia interpreter. This is dangerous and means arbitrary code can be run, so be careful! `network_size.2` goes through and sets the second element of the network_sizes array to be in the list. Finally `arg_1+arg_2` sweeps over both arg_1 and arg_2 simultaneously (i.e. doesn't do a product over these).
 
+Sweep args special characters:
+- "+": This symbol sweeps over a vector of vectors and sets the arguments according to the values of the inner vectors in the order specified.
+- ".": This symbol is an "access" symbol and accesses nested structures in the set of arguments.
+- "*": This symbol is similar to "+" but instead sets all the keys to be the top level value in the sweep vector.
+
 
 """
 struct ArgIteratorV2
