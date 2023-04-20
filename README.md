@@ -8,7 +8,7 @@ A framework for managing hyper-parameter settings, and running experiments. Ligh
 
 ## What is this?
 
-This repository is for giving you the tools you need to make experiments reproducible. This repository is mostly built around machine learning and reinforcement learning projects, but there is no reason it is restricted to these types of projects. I've developed this around my own tastes (specifically using )
+This repository is for giving you the tools you need to make experiments reproducible. This repository is mostly built around machine learning and reinforcement learning projects, but there is no reason it is restricted to these types of projects. I've developed this around my own tastes and needs, but should be generally usable for any style of experiment which needs to do massively parallel parameter sweeps of a set of functions. 
 
 ## How To use
 

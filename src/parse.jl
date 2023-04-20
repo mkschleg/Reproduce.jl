@@ -1,7 +1,7 @@
 
 # Parse experiment config toml.
 
-if VERSION > v"1.6"
+@static if VERSION > v"1.6"
     using TOML
 else
     using Pkg.TOML
@@ -129,6 +129,32 @@ function get_arg_iter(::Val{:looper}, dict)
               run_list)
 end
 
+"""
+    get_arg_iter(::Val{:iterV2}, dict)
+
+This is the function which parses [`ArgIteratorV2`](@ref) from a config file dictionary.
+It expects the following nested dictionaries:
+- `config`: This has all the various components to help detail the expeirment (see [`parse_experiment_from_config`](@ref) for more details.)
+    - `arg_list_order::Vector{String}`: inside the config dict is the order on which to do your sweeps. For example, if seed is first, the scheduler will make sure to run all the seeds for a particular setting before moving to the next set of parameters.
+- `sweep_args`: These are all the arguments that the args iter will sweep over (doing a cross product to produce all the parameters). See [`ArgIteratorV2`](@ref) for supported features.
+- `static_args`: This is an optional component which contains all the arguments which are static. If not included, all elements in the top level of the dictionary will be assumed to be static args (excluding config and sweep_args).
+"""
+function get_arg_iter(iter_type::Val{:iterV2}, dict)
+
+    static_args_dict = get_static_args(iter_type, dict)
+    cdict = dict["config"]
+    
+    arg_order = get(cdict, "arg_list_order", nothing)
+
+    sweep_args_dict = prepare_sweep_args(dict["sweep_args"])
+    
+    @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(sweep_args_dict))))
+
+    ArgIteratorV2(sweep_args_dict,
+                  static_args_dict,
+                  arg_order=arg_order)
+end
+
 function get_static_args(::Val{:iterV2}, dict)
 
     static_args_dict = if "static_args" ∈ keys(dict)
@@ -155,7 +181,8 @@ function prepare_sweep_args(sweep_args)
         elseif sweep_args[key] isa Dict
             d = prepare_sweep_args(sweep_args[key])
             for k in keys(d)
-                new_dict[key*"."*k] = d[k]
+                # dot syntax for ArgsIteratorV2
+                new_dict[key*"."*k] = d[k] 
             end
         else
             new_dict[key] = sweep_args[key]
@@ -164,21 +191,7 @@ function prepare_sweep_args(sweep_args)
     new_dict
 end
 
-function get_arg_iter(::Val{:iterV2}, dict)
 
-    static_args_dict = get_static_args(Val(:iterV2), dict)
-    cdict = dict["config"]
-    
-    arg_order = get(cdict, "arg_list_order", nothing)
-
-    sweep_args_dict = prepare_sweep_args(dict["sweep_args"])
-    
-    @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(sweep_args_dict))))
-
-    ArgIteratorV2(sweep_args_dict,
-                  static_args_dict,
-                  arg_order=arg_order)
-end
 
 
 #=

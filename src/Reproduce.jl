@@ -1,7 +1,14 @@
 
 module Reproduce
 
+"""
+    _safe_fileop
 
+Not entirely safe, but manages the interaction between whether a folder has already been created before
+another process. Kinda important for a multi-process workflow.
+
+Can't really control what the user will do...
+"""
 function _safe_fileop(f::Function, check::Function)
     if check()
         try
@@ -38,67 +45,27 @@ export ItemCollection, search, details
 include("search.jl")
 
 # Saving utils in Config.jl are really nice. Just reusing and pirating a new type until I figure out what FileIO can and can't do.
-export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
-include("data_manager.jl")
-
-# SQL Management...
-include("sql_utils.jl")
-include("sql_manager.jl")
-
+# export HDF5Manager, BSONManager, JLD2Manager, TOMLManager, save, save!, load
 include("save.jl")
 
-abstract type AbstractArgIter end
 
-export ArgIterator, ArgLooper
-include("args_iter.jl")
-include("args_iter_v2.jl")
-include("args_looper.jl")
+include("iterators.jl")
 
 
-export Experiment, create_experiment_dir, add_experiment, pre_experiment, post_experiment
+export Experiment,
+    create_experiment_dir,
+    add_experiment,
+    pre_experiment,
+    post_experiment
 include("experiment.jl")
 
-import Git
-
-function git_head()
-    try
-        s = if IN_SLURM()
-            read(`git rev-parse HEAD`, String)
-        else
-            try
-                read(`$(Git.git()) rev-parse HEAD`, String)
-            catch
-                read(`git rev-parse HEAD`, String)
-            end
-        end
-        s[1:end-1]
-    catch
-        "0"
-    end
-end
-
-function git_branch()
-    try
-        s = if IN_SLURM()
-            read(`git rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
-        else
-            try
-                read(`$(Git.git()) rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
-            catch
-                read(`git rev-parse --symbolic-full-name --abbrev-ref HEAD`, String)
-            end
-        end
-        s[1:end-1]
-    catch
-        "0"
-    end
-end
+include("git_utils.jl")
 
 include("parse.jl")
 
 export job
-include("job.jl")
+include("parallel/job.jl")
 
-include("exp_util.jl")
+include("utils/exp_util.jl")
 
 end # module

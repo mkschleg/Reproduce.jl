@@ -1,5 +1,5 @@
 
-struct ArgIterator <: AbstractArgIter
+struct ArgIterator 
     dict::Dict
     static_args::Dict{String, Any}
     arg_order::Vector{String}

@@ -1,6 +1,9 @@
 
 
-struct ArgIteratorV2 <: Reproduce.AbstractArgIter
+"""
+    ArgIteratorV2
+"""
+struct ArgIteratorV2
     sweep_args::Dict
     static_args::Dict{String, Any}
     arg_order::Vector{String}
