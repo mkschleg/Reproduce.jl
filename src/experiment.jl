@@ -16,7 +16,7 @@ function get_comp_env()
     if "SLURM_JOBID" ∈ keys(ENV) && "SLURM_NTASKS" ∈ keys(ENV)
         SlurmParallel(parse(Int, ENV["SLURM_NTASKS"]))
     elseif "SLURM_ARRAY_TASK_ID" ∈ keys(ENV)
-        SlurmTaskArray(parse(Int, ENV["SLURM_ARRAY_TASK_ID"]))
+        SlurmTaskArray(parse(Int, ENV["SLURM_ARRAY_TASK_ID"])) # this needs to be fixed.
     elseif "RP_TASK_ID" ∈ keys(ENV)
         LocalTask(parse(Int, ENV["RP_TASK_ID"]))
     else
@@ -69,12 +69,28 @@ struct Metadata{ST, CE}
     config::Union{String, Nothing}
 end
 
+
 struct Experiment{MD<:Metadata, I}
     job_metadata::JobMetadata
     metadata::MD
     args_iter::I
 end
 
+"""
+    Experiment
+
+The structure used to embody a reproduce experiment. This is usually constructed through the [`parse_experiment_from_config`](@ref), but can be used without config files.
+
+- `dir`: the base directory of the experiment (where the info files are saved).
+- `file`: The file containing the experiment function described by `func_name` and `module_name`
+- `module_name`: Module name containing the experiment function.
+- `func_name`: Function name of the experiment.
+- `save_type`: The save structure to deal with saving data passed by the experiment.
+- `args_iter`: The args iterator which contains the configs to pass to the experiment.
+- `[confg]`: The config file parsed to create the experiment (optional)
+# kwarg
+- `[comp_env]`: The computational environment used by the experiment.
+"""
 function Experiment(dir, file, module_name, func_name, save_type, args_iter, config=nothing; comp_env=get_comp_env())
 
     job_comp = JobMetadata(file, Symbol(module_name), Symbol(func_name))
@@ -85,20 +101,35 @@ function Experiment(dir, file, module_name, func_name, save_type, args_iter, con
 end
 
 
+"""
+    pre_experiment(exp::Experiment; kwargs...)
+    pre_experiment(file_save::FileSave, exp; kwargs...)
+    pre_experiment(sql_save::SQLSave, exp; kwargs...)
+
+This function does all the setup required to successfully run an experiment. It is dispatched on the save structure in the experiment.
+
+This function:
+- Creates the base experiment directory.
+- Runs [`experiment_save_init`](@ref) to initialize the details for each save type.
+- runs [`add_experiment`](@ref)
+"""
 function pre_experiment(exp::Experiment; kwargs...)
-    pre_experiment(exp.metadata.save_type, exp; kwargs...)
+    create_experiment_dir(exp.metadata.details_loc)
+    experiment_save_init(exp.metadata.save_type, exp; kwargs...)
+    add_experiment(exp)
 end
 
-function pre_experiment(file_save::FileSave, exp; kwargs...)
-    create_experiment_dir(exp.metadata.details_loc)
+"""
+    experiment_save_init(save::FileSave, exp::Experiment; kwargs...)
+    experiment_save_init(save::SQLSave, exp::Experiment; kwargs...)
+
+Setups the necessary compoenents to save data for the jobs. This is run by [`pre_experiment`](@ref). The `FileSave` creates the data directory where all the data is stored for an experiment. The `SQLSave` ensures the databases and tables are created necessary to successfully run an experiment.
+"""
+function experiment_save_init(file_save::FileSave, exp; kwargs...)
     create_data_dir(file_save.save_dir)
-    add_experiment(exp)
 end
-
-function pre_experiment(sql_save::SQLSave, exp; kwargs...)
-    create_experiment_dir(exp.metadata.details_loc)
+function experiment_save_init(sql_save::SQLSave, exp; kwargs...)
     create_database_and_tables(sql_save, exp)
-    add_experiment(exp)
 end
 
 function create_experiment_dir(exp_dir)
@@ -125,13 +156,9 @@ end
 
 function create_database_and_tables(sql_save::SQLSave, exp::Experiment)
 
-    # if :sql_infofile ∈ keys(kwargs)
-    # else
-    #     dbm = DBManager()
-    # end
     dbm = DBManager(sql_save.connection_file)
-
     db_name = get_database_name(sql_save)
+
     # Create and switch to database. This checks to see if database exists before creating
     create_and_switch_to_database(dbm, db_name)
 
@@ -176,6 +203,11 @@ get_settings_file(hash::UInt) = "settings_0x"*string(hash, base=16)*".jld2"
 get_config_copy_file(hash::UInt) = "config_0x"*string(hash, base=16)*".jld2"
 get_jobs_dir(details_loc) = joinpath(details_loc, "jobs")
 
+"""
+    add_experiment
+
+This adds the experiment to the directory (remember directories can contain multiple experiments).
+"""
 function add_experiment(exp::Experiment)
 
     comp_env = exp.metadata.comp_env
@@ -217,46 +249,8 @@ function add_experiment(exp::Experiment)
 end
 
 function post_experiment(exp::Experiment, job_ret)
-    # post_experiment(exp.comp_env, exp, job_ret)
+    # I'm not sure what to put here.
 end
 
-@deprecate exception_file(args...) save_exception(args...)
 
-
-function save_exception(config, exc_file, job_id, exception, trace)
-
-    if isfile(exc_file)
-        @warn "$(exc_file) already exists. Overwriting..."
-    end
-
-    open(exc_file, "w") do f
-        exception_string = "Exception for job_id: $(job_id)\n\n"
-        exception_string *= "Config: \n" * string(config) * "\n\n"
-        exception_string *= "Exception: \n" * string(exception) * "\n\n"
-
-        write(f, exception_string)
-        Base.show_backtrace(f, trace)
-    end
-
-    return
-end
-
-function save_exception(exc_file, job_id, exception, trace)
-
-    @warn "Please pass config to exception." maxlog=1
-    if isfile(exc_file)
-        @warn "$(exc_file) already exists. Overwriting..."
-    end
-
-    open(exc_file, "w") do f
-        exception_string =
-            "Exception for job_id: $(job_id)\n\n" * string(exception) * "\n\n"
-
-        write(f, exception_string)
-        Base.show_backtrace(f, trace)
-    end
-
-    return
-    
-end
 

@@ -1,5 +1,5 @@
 
-struct ArgLooper{SA, SB, RI}  <: AbstractArgIter
+struct ArgLooper{SA, SB, RI}
     dict_list::Vector{SA}
     runs_iter::RI
     stable_arg::SB

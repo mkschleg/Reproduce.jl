@@ -6,16 +6,9 @@ This page will be dedicated to introducing the user to building and running expe
 
 ## Experiment Struct
 
-
 ## Argument Iterators
-
-### ArgIter
-### ArgLooper
 
 ## Config Files
 
 ## Running experiments
 
-
-
-# Config.jl

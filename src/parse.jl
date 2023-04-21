@@ -1,7 +1,7 @@
 
 # Parse experiment config toml.
 
-if VERSION > v"1.6"
+@static if VERSION > v"1.6"
     using TOML
 else
     using Pkg.TOML
@@ -61,6 +61,7 @@ get_arg_iter parses cdict to get the correct argument iterator. "arg_iter_type" 
 Reproduce has two iterators:
 - T=:iter: ArgIterator which does a grid search over arguments
 - T=:looper: ArgLooper which loops over a vector of dictionaries which can be loaded from an arg_file.
+- T=:iterV2: ArgIteratorV2 which is the second version of the original ArgIterator, and currently recommended.
 
 To implement a custom arg_iter you must implement `Reproduce.get_arg_iter(::Val{:symbol}, cdict)` where :symbol is the value arg_iter_type will take.
 """
@@ -129,6 +130,32 @@ function get_arg_iter(::Val{:looper}, dict)
               run_list)
 end
 
+"""
+    get_arg_iter(::Val{:iterV2}, dict)
+
+This is the function which parses [`ArgIteratorV2`](@ref) from a config file dictionary.
+It expects the following nested dictionaries:
+- `config`: This has all the various components to help detail the expeirment (see [`parse_experiment_from_config`](@ref) for more details.)
+    - `arg_list_order::Vector{String}`: inside the config dict is the order on which to do your sweeps. For example, if seed is first, the scheduler will make sure to run all the seeds for a particular setting before moving to the next set of parameters.
+- `sweep_args`: These are all the arguments that the args iter will sweep over (doing a cross product to produce all the parameters). See [`ArgIteratorV2`](@ref) for supported features.
+- `static_args`: This is an optional component which contains all the arguments which are static. If not included, all elements in the top level of the dictionary will be assumed to be static args (excluding config and sweep_args).
+"""
+function get_arg_iter(iter_type::Val{:iterV2}, dict)
+
+    static_args_dict = get_static_args(iter_type, dict)
+    cdict = dict["config"]
+    
+    arg_order = get(cdict, "arg_list_order", nothing)
+
+    sweep_args_dict = prepare_sweep_args(dict["sweep_args"])
+    
+    @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(sweep_args_dict))))
+
+    ArgIteratorV2(sweep_args_dict,
+                  static_args_dict,
+                  arg_order=arg_order)
+end
+
 function get_static_args(::Val{:iterV2}, dict)
 
     static_args_dict = if "static_args" ∈ keys(dict)
@@ -155,7 +182,8 @@ function prepare_sweep_args(sweep_args)
         elseif sweep_args[key] isa Dict
             d = prepare_sweep_args(sweep_args[key])
             for k in keys(d)
-                new_dict[key*"."*k] = d[k]
+                # dot syntax for ArgsIteratorV2
+                new_dict[key*"."*k] = d[k] 
             end
         else
             new_dict[key] = sweep_args[key]
@@ -164,21 +192,7 @@ function prepare_sweep_args(sweep_args)
     new_dict
 end
 
-function get_arg_iter(::Val{:iterV2}, dict)
 
-    static_args_dict = get_static_args(Val(:iterV2), dict)
-    cdict = dict["config"]
-    
-    arg_order = get(cdict, "arg_list_order", nothing)
-
-    sweep_args_dict = prepare_sweep_args(dict["sweep_args"])
-    
-    @assert arg_order isa Nothing || all(sort(arg_order) .== sort(collect(keys(sweep_args_dict))))
-
-    ArgIteratorV2(sweep_args_dict,
-                  static_args_dict,
-                  arg_order=arg_order)
-end
 
 
 #=
@@ -196,7 +210,33 @@ parse_config_file(::Val{:toml}, path) = TOML.parsefile(path)
 parse_config_file(::Val{:json}, path) = JSON.Parser.parsefile(path)
 
 
+"""
+    parse_experiment_from_config
 
+This function creates an experiment from a config file. 
+
+## args
+- `config_path::String` the path to the config.
+- `[save_path::String]` a save path which dictates where the base savedir for the job will be (prepend dict["config"]["save_dir"]).
+## kwargs
+- `comp_env` a computational environment which dispatchers when job is called.
+
+The config file needs to be formated in a certain way. I use toml examples below:
+```toml
+[config]
+save_dir="location/to/save" # will be prepended by save_path
+exp_file="file/containing/experiment.jl" # The file containing your experiment function
+exp_module_name = "ExperimentModule" # The module of your experiment in the experiment file
+exp_func_name = "main_experiment" # The function to call in the experiment module.
+arg_iter_type = "iterV2"
+
+# These are specific to what arg_iter_type you are using 
+[static_args]
+...
+[sweep_args]
+...
+```
+"""
 function parse_experiment_from_config(config_path, save_path=""; comp_env=get_comp_env())
     
     # need to deal with parsing config file.

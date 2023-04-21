@@ -1,6 +1,39 @@
 
 
-struct ArgIteratorV2 <: Reproduce.AbstractArgIter
+"""
+    ArgIteratorV2
+
+This is the second version of the Argument Iterator. The old version is kept for posterity, and to ensure compatibility of old config files. To use this iterator use:
+`arg_iter_type="iterV2` in the `config` portion of your configuration file when using [`parse_experiment_from_config`](@ref). This iterator does a product over all the arguments found in the `sweep_args` nested section. For example:
+
+```toml
+[config]
+...
+arg_iter_type="iterV2"
+
+[static_args]
+network_sizes = [10, 30, 100]
+log_freq = 100_000
+arg_1 = 1
+arg_2 = 1
+
+[sweep_args]
+seed = [1,2,3,4,5]
+eta = "0.15.^(-10:2:0)"
+network_sizes.2 = [10, 30, 50, 70]
+arg_1+arg_2 = [[1,1], [2,2], [3,3]]
+
+```
+
+produces a set of 360 argument settings. The seed parameter is straight forward, where the iterator iterates over the list. `eta`'s string will be parsed by the julia interpreter. This is dangerous and means arbitrary code can be run, so be careful! `network_size.2` goes through and sets the second element of the network_sizes array to be in the list. Finally `arg_1+arg_2` sweeps over both arg_1 and arg_2 simultaneously (i.e. doesn't do a product over these).
+
+Sweep args special characters:
+- "+": This symbol sweeps over a vector of vectors and sets the arguments according to the values of the inner vectors in the order specified.
+- ".": This symbol is an "access" symbol and accesses nested structures in the set of arguments.
+- "*": This symbol is similar to "+" but instead sets all the keys to be the top level value in the sweep vector.
+
+"""
+struct ArgIteratorV2
     sweep_args::Dict
     static_args::Dict{String, Any}
     arg_order::Vector{String}
@@ -53,15 +86,18 @@ function set_argument!(d, arg::AbstractString, v)
         idx = findfirst("[", arg)[1]
         set_argument!(d[arg[1:idx-1]], arg[idx:end], v)
     elseif occursin(".", arg)
+        # sets into collections of things.
         sarg = split(arg, ".")
         arg_vec = int_parse_or_not.(sarg)
         set_argument!(d, arg_vec, v)
     elseif occursin("+", arg)
+        # sweeps over set of keys with a set of values
         ks = split(arg, "+")
         for (i, k) ∈ enumerate(ks)
             d[k] = v[i]
         end
     elseif occursin("*", arg)
+        # sets all the keys to be the same value
         ks = int_parse_or_not.(split(args[1], "*"))
         for (i, k) ∈ enumerate(ks)
             set_argument!(d[k], args[2:end], v)
