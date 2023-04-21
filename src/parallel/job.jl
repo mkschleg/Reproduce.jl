@@ -8,11 +8,6 @@ using Dates
 using Parallelism
 # using Config
 
-include("slurm.jl")
-using .ClusterManagers
-
-# IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
-
 
 """
     job(experiment::Experiment; kwargs...)
@@ -26,14 +21,6 @@ function job(exp::Experiment; kwargs...)
     comp_env = exp.metadata.comp_env
     job(comp_env, exp; kwargs...)
 end
-# job(exp.file,
-#     exp.dir,
-#     exp.args_iter;
-#     exp_module_name=exp.module_name,
-#     exp_func_name=exp.func_name,
-#     exception_dir="$(exp.dir)/except/exp_0x$(string(exp.hash, base=16))",
-#     checkpoint_name="$(exp.dir)/checkpoints/exp_0x$(string(exp.hash, base=16))",
-#     kwargs...)
 
 function job(comp_env::SlurmParallel, exp; kwargs...)
     parallel_job(exp; kwargs...)
@@ -50,10 +37,6 @@ end
 function job(comp_env::LocalTask, exp; kwargs...)
     task_job(exp; kwargs...)
 end
-
-# function job(exp, job_id; kwargs...)
-#     task_job(exp, job_id; kwargs...)
-# end
 
 function add_procs(comp_env::SlurmParallel, num_workers, project, color_opt, job_file_dir)
     num_workers = comp_env.num_procs

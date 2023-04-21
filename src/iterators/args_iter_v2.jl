@@ -32,7 +32,6 @@ Sweep args special characters:
 - ".": This symbol is an "access" symbol and accesses nested structures in the set of arguments.
 - "*": This symbol is similar to "+" but instead sets all the keys to be the top level value in the sweep vector.
 
-
 """
 struct ArgIteratorV2
     sweep_args::Dict

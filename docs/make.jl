@@ -12,9 +12,13 @@ makedocs(
             "Parallel Jobs"=>"manual/parallel.md"
         ],
         "Documentation" => [
+            "Parser"=>"docs/parse.md",
+            "Iterators"=>"docs/iterators.md",
             "Experiment"=>"docs/experiment.md",
             "Parallel"=>"docs/parallel.md",
-            "Data Structure"=>"docs/parse.md"
+            "Experiment Utilities"=>"docs/exp_utils.md",
+            "Misc Utilities"=>"docs/misc.md"
+
         ]
     ]
 )
@@ -28,6 +32,6 @@ makedocs(
 
 deploydocs(
     repo = "github.com/mkschleg/Reproduce.jl.git",
-    devbranch = "master",
+    devbranch = "main",
     versions = ["stable" => "v^"]
 )

@@ -23,9 +23,19 @@ function _safe_fileop(f::Function, check::Function)
     end
 end
 
+"""
+    _safe_mkdir
+
+`mkdir` guarded by [`_safe_fileop`](@ref).
+"""
 _safe_mkdir(exp_dir) = 
     _safe_fileop(()->mkdir(exp_dir), ()->!isdir(exp_dir))
 
+"""
+    _safe_mkpath
+
+`mkpath` guarded by [`_safe_fileop`](@ref).
+"""
 _safe_mkpath(exp_dir) = 
     _safe_fileop(()->mkpath(exp_dir), ()->!isdir(exp_dir))
 
@@ -64,8 +74,10 @@ include("git_utils.jl")
 include("parse.jl")
 
 export job
-include("parallel/job.jl")
+include("parallel.jl")
 
 include("utils/exp_util.jl")
+
+include("macros.jl")
 
 end # module

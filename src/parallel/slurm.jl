@@ -3,11 +3,10 @@ module ClusterManagers
 using Distributed
 using Sockets
 
-export launch, manage, kill, init_worker, connect
+export launch, manage, kill, init_worker
 import Distributed: launch, manage, kill, init_worker, connect
 
 worker_arg() = `--worker=$(Distributed.init_multi(); cluster_cookie())`
-
 
 export SlurmManager, addprocs_slurm
 
@@ -15,7 +14,11 @@ import Logging.@warn
 
 struct SlurmManager <: ClusterManager
     np::Integer
+    retry_delays
 end
+
+SlurmManager(np::Integer) = SlurmManager(np, ExponentialBackOff(n=10, first_delay=1,
+                                                                max_delay=512, factor=2))
 
 function launch(manager::SlurmManager, params::Dict, instances_arr::Array,
                 c::Condition)
@@ -58,23 +61,25 @@ function launch(manager::SlurmManager, params::Dict, instances_arr::Array,
         # cleanup old files
 	map(f->rm(joinpath(job_file_loc, f)), filter(t -> occursin(r"job(.*?).out", t), readdir(job_file_loc)))
 
+        jobname = "julia-$(getpid())"
         job_output_name = "job"
         make_job_output_path(task_num) = joinpath(job_file_loc, "$(job_output_name)-$(task_num).out")
         job_output_template = make_job_output_path("%4t")
 
         np = manager.np
-        jobname = "julia-$(getpid())"
+
         srun_cmd = `srun --exclusive --no-kill -J $jobname -n $np -o "$(job_output_template)" -D $exehome $(srunargs) $exename $exeflags $(worker_arg())`
         srun_proc = open(srun_cmd)
 
         slurm_spec_regex = r"([\w]+):([\d]+)#(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})"
+        retry_delays = manager.retry_delays
         
         for i = 0:np - 1
             println("connecting to worker $(i + 1) out of $np")
             slurm_spec_match = nothing
             fn = make_job_output_path(lpad(i, 4, "0"))
             t0 = time()
-            while true
+            for retry_delay in retry_delays
                 # Wait for output log to be created and populated, then parse
                 if isfile(fn) && filesize(fn) > 0
                     slurm_spec_match = open(fn) do f
@@ -91,7 +96,16 @@ function launch(manager::SlurmManager, params::Dict, instances_arr::Array,
                         break   # break if specification found
                     end
                 end
-            end
+                # sleep for a bit of time
+                sleep(retry_delay)
+            end # end retry_delay
+
+            # don't throw when trying to add proc
+            # if slurm_spec_match === nothing
+            #     throw(SlurmException("Timeout while trying to connect to worker"))
+            # end
+            # if slurm_spec_match !== nothing
+            # If the job is succesfully created we want to push it as an instance, otherwise ignore it
             config = WorkerConfig()
             config.port = parse(Int, slurm_spec_match[2])
             config.host = strip(slurm_spec_match[3])
@@ -100,6 +114,8 @@ function launch(manager::SlurmManager, params::Dict, instances_arr::Array,
             config.userdata = srun_proc
             push!(instances_arr, config)
             notify(c)
+                
+            
         end
     catch e
         println("Error launching Slurm job:")
@@ -112,6 +128,11 @@ function manage(manager::SlurmManager, id::Integer, config::WorkerConfig,
     # This function needs to exist, but so far we don't do anything
 end
 
-addprocs_slurm(np::Integer; kwargs...) = addprocs(SlurmManager(np); kwargs...)
+function addprocs_slurm(np::Integer;
+                        retry_delays = ExponentialBackOff(n=10, first_delay=1,
+                                               max_delay=512, factor=2),
+                        kwargs...)
+    addprocs(SlurmManager(np, retry_delays); kwargs...)
+end
 
 end
