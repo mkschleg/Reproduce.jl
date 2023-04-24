@@ -56,7 +56,7 @@ function get_slurm_comp_env(; kwargs...)
             parse(Int, ENV["SLURM_ARRAY_TASK_COUNT"])
         end
         ntasks = parse(Int, ENV["SLURM_NTASKS"])
-        cpus_per_task = parse(Int, ENV["SLURM_CPUS_PER_TASK"])
+        cpus_per_task = parse(Int, get(ENV, "SLURM_CPUS_PER_TASK", "1"))
 
         prl = if ntasks == 1
             # check if RP_ONE_PARAM is set
@@ -72,7 +72,7 @@ function get_slurm_comp_env(; kwargs...)
         SlurmTaskArray(array_id, prl, array_size, ENV["SLURM_JOB_NAME"])
     else
         SlurmParallel(parse(Int, ENV["SLURM_NTASKS"]),
-                      parse(Int, ENV["SLURM_CPUS_PER_TASK"]),
+                      parse(Int, get(ENV, "SLURM_CPUS_PER_TASK", "1")),
                       ENV["SLURM_JOB_NAME"])
     end
 end
