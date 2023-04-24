@@ -237,7 +237,7 @@ arg_iter_type = "iterV2"
 ...
 ```
 """
-function parse_experiment_from_config(config_path, save_path=""; comp_env=get_comp_env())
+function parse_experiment_from_config(config_path, save_path=""; num_workers=1, num_threads_per_worker=1, comp_env=get_comp_env(;num_workers=num_workers, threads_per_worker=num_threads_per_worker))
     
     # need to deal with parsing config file.
 
@@ -264,7 +264,7 @@ function parse_experiment_from_config(config_path, save_path=""; comp_env=get_co
                save_type,
                arg_iter,
                config_path;
-               comp_env=get_comp_env())
+               comp_env=comp_env)
 end
 
 

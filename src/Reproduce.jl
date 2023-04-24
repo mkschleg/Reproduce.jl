@@ -61,6 +61,8 @@ include("save.jl")
 
 include("iterators.jl")
 
+include("comp_envs.jl")
+
 
 export Experiment,
     create_experiment_dir,

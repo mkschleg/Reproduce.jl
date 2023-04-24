@@ -10,47 +10,7 @@ using Distributed
 
 
 
-IN_SLURM() = ("SLURM_JOBID" ∈ keys(ENV)) && ("SLURM_NTASKS" ∈ keys(ENV))
 
-function get_comp_env()
-    if "SLURM_JOBID" ∈ keys(ENV) && "SLURM_NTASKS" ∈ keys(ENV)
-        SlurmParallel(parse(Int, ENV["SLURM_NTASKS"]))
-    elseif "SLURM_ARRAY_TASK_ID" ∈ keys(ENV)
-        SlurmTaskArray(parse(Int, ENV["SLURM_ARRAY_TASK_ID"])) # this needs to be fixed.
-    elseif "RP_TASK_ID" ∈ keys(ENV)
-        LocalTask(parse(Int, ENV["RP_TASK_ID"]))
-    else
-        if "RP_NTASKS" ∈ keys(ENV)
-            LocalParallel(parse(Int, ENV["RP_NTASKS"]))
-        else
-            LocalParallel(0)
-        end
-    end
-end
-
-
-get_task_id(comp_env) = comp_env.id
-is_task_env(comp_env) = false
-
-struct SlurmTaskArray
-    id::Int
-end
-
-is_task_env(comp_env::SlurmTaskArray) = true
-
-struct SlurmParallel
-    num_procs::Int
-end
-
-struct LocalTask
-    id::Int
-end
-
-is_task_env(comp_env::LocalTask) = true
-
-struct LocalParallel
-    num_procs::Int
-end
 
 
 # what does experiment do? Can it be simplified? Can parts of it be decomposed?
@@ -62,13 +22,22 @@ struct JobMetadata
 end
 
 struct Metadata{ST, CE}
+    name::String
     save_type::ST
     comp_env::CE
     details_loc::String
     hash::UInt64
     config::Union{String, Nothing}
+    job_log_dir::String
 end
 
+get_jobs_dir(comp_env, details_loc) = joinpath(details_loc, "jobs")#, get_job_name(comp_env))
+
+function Metadata(save_type, comp_env, dir, exp_hash, config)
+    name = get_job_name(comp_env)
+    job_log_dir = get_jobs_dir(comp_env, dir)
+    Metadata(name, save_type, comp_env, dir, exp_hash, config, job_log_dir)
+end
 
 struct Experiment{MD<:Metadata, I}
     job_metadata::JobMetadata
@@ -116,7 +85,7 @@ This function:
 function pre_experiment(exp::Experiment; kwargs...)
     create_experiment_dir(exp.metadata.details_loc)
     experiment_save_init(exp.metadata.save_type, exp; kwargs...)
-    add_experiment(exp)
+    experiment_dir_setup(exp)
 end
 
 """
@@ -201,36 +170,55 @@ end
 get_settings_dir(details_loc) = joinpath(details_loc, "settings")
 get_settings_file(hash::UInt) = "settings_0x"*string(hash, base=16)*".jld2"
 get_config_copy_file(hash::UInt) = "config_0x"*string(hash, base=16)*".jld2"
-get_jobs_dir(details_loc) = joinpath(details_loc, "jobs")
 
-"""
-    add_experiment
+function experiment_dir_setup(exp::Experiment)
+    experiment_dir_setup(exp.metadata.comp_env, exp)
+end
 
-This adds the experiment to the directory (remember directories can contain multiple experiments).
-"""
-function add_experiment(exp::Experiment)
-
-    comp_env = exp.metadata.comp_env
-    if is_task_env(comp_env)
-        if get_task_id(comp_env) != 1
-            task_id = comp_env.id
-            @info "Only add experiment for task id == 1... id : $(task_id) $(task_id == 1)"
-            return
-        end
-    end
-
+function experiment_dir_setup(comp_env::LocalParallel, exp::Experiment)
     exp_dir = exp.metadata.details_loc
+    create_jobs_folder(exp)
+    save_experiment_settings(exp)
+end
 
-    @info "Adding Experiment to $(exp_dir)"
+function experiment_dir_setup(comp_env::SlurmParallel, exp::Experiment)
+    exp_dir = exp.metadata.details_loc
+    create_jobs_folder(exp)
+    save_experiment_settings(exp)
+end
+
+function experiment_dir_setup(comp_env::SlurmTaskArray, exp::Experiment)
+    exp_dir = exp.metadata.details_loc
+    create_jobs_folder(exp)
+    array_idx = comp_env.array_idx
+    if array_idx != 1
+        @info "Only save settings for array index == 1: array index = $(array_idx)"
+        return
+    end
+    save_experiment_settings(exp)
+end
+
+function experiment_dir_setup(comp_env::TaskJob, exp::Experiment)
+    task_id = comp_env.id
+    if task_id != 1
+        @info "Only add experiment for task id == 1... id : $(task_id) $(task_id == 1)"
+        return
+    end
+    exp_dir = exp.metadata.details_loc
+    save_experiment_settings(exp)
+end
+
+function create_jobs_folder(exp::Experiment)
+     _safe_mkpath(exp.metadata.job_log_dir)
+end
+
+function save_experiment_settings(exp::Experiment)# exp_dir, exp_hash)
+    exp_dir = exp.metadata.details_loc
+    exp_hash = exp.metadata.hash
     
     settings_dir = get_settings_dir(exp_dir)
     _safe_mkdir(settings_dir)
 
-    if comp_env isa SlurmParallel
-        _safe_mkdir(get_jobs_dir(exp_dir))
-    end
-    
-    exp_hash = exp.metadata.hash
     settings_file = joinpath(settings_dir, "settings_0x"*string(exp_hash, base=16)*".jld2")
 
     args_iter = exp.args_iter
@@ -245,7 +233,7 @@ function add_experiment(exp::Experiment)
         config_file = joinpath(settings_dir, "config_0x"*string(exp_hash, base=16)*splitext(config)[end])
         cp(config, config_file; force=true)
     end
-
+    
 end
 
 function post_experiment(exp::Experiment, job_ret)
