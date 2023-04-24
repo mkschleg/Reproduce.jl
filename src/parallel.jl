@@ -173,7 +173,7 @@ function job_array(comp_env::Union{SlurmParallel, LocalParallel},
     exp_hash = experiment.metadata.hash
     exp_dir_name = "exp_0x$(string(exp_hash, base=16))" * "$(tsk_array.array_idx)"
     job_file_dir = joinpath(experiment.metadata.job_log_dir, get_job_name(tsk_array))
-    exception_dir = joinpath(exp_dir, "except", get_job_name(experiment))
+    exception_dir = joinpath(exp_dir, "except", get_job_name(tsk_array))
     checkpoint_file = joinpath(exp_dir, "checkpoints", exp_dir_name * ".jld2")
 
     # args_iter = Iterators.partition(experiment.args_iter,
