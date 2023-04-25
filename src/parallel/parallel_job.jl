@@ -102,7 +102,7 @@ function parallel_job_inner(comp_env,
     @info "Number of Jobs left: $(n - sum(values(done_jobs)))/$(n)"
     num_jobs_left = n - sum(values(done_jobs))
 
-    if all(done_jobs)
+    if all(values(done_jobs))
         @info "All jobs finished!"
         return findall((x)->x==false, finished_jobs_arr)
     end
@@ -196,7 +196,11 @@ function parallel_job_inner(comp_env,
             JLD2.@load checkpoint_file finished_jobs_arr
             return findall((x)->x==false,  finished_jobs_arr)
         else
-            finished_jobs_bool = fill(false, n)
+            finished_jobs_bool = if isnothing(sub_seq)
+                fill(false, n)
+            else
+                Dict(i => false for i in sub_seq)
+            end
             while isready(job_id_channel)
                 job_id = take!(job_id_channel)
                 finished_jobs_bool[job_id] = true
