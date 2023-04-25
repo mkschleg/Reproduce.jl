@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Experiment Utilities · Reproduce</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Reproduce</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../manual/experiment/">Developing an Experiment</a></li><li><a class="tocitem" href="../../manual/parallel/">Parallel Jobs</a></li></ul></li><li><span class="tocitem">Documentation</span><ul><li><a class="tocitem" href="../parse/">Parser</a></li><li><a class="tocitem" href="../iterators/">Iterators</a></li><li><a class="tocitem" href="../experiment/">Experiment</a></li><li><a class="tocitem" href="../save/">Save</a></li><li><a class="tocitem" href="../parallel/">Parallel</a></li><li class="is-active"><a class="tocitem" href>Experiment Utilities</a></li><li><a class="tocitem" href="../misc/">Misc Utilities</a></li></ul></li><li><span class="tocitem">Deprecated Utilities</span><ul><li><a class="tocitem" href="../search/">Search</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Documentation</a></li><li class="is-active"><a href>Experiment Utilities</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Experiment Utilities</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/mkschleg/Reproduce.jl/blob/main/docs/src/docs/exp_utils.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Experiment-Utilities"><a class="docs-heading-anchor" href="#Experiment-Utilities">Experiment Utilities</a><a id="Experiment-Utilities-1"></a><a class="docs-heading-anchor-permalink" href="#Experiment-Utilities" title="Permalink"></a></h1><article class="docstring"><header><a class="docstring-binding" id="Reproduce.@generate_config_funcs-Tuple{Any}" href="#Reproduce.@generate_config_funcs-Tuple{Any}"><code>Reproduce.@generate_config_funcs</code></a> — <span class="docstring-category">Macro</span></header><section><div><pre><code class="language-julia hljs">@generate_config_funcs default_config</code></pre><p>Generate a documented function <code>default_config()</code> which returns a default configuration Dict for an experiment. The default configuration Dict is built using the <code>default_config</code> argument, which should have the following form:</p><pre><code class="nohighlight hljs">.
+.
+.
+info&quot;&quot;&quot;
+DOCUMENTATION
+&quot;&quot;&quot;
+DICTIONARY ELEMENTS
+.
+.
+.</code></pre><p>Where &#39;DOCUMENTATION&#39; is a documentation for each element included in <code>DICTIONARY ELEMENTS</code>. &#39;DICTIONARY ELEMENTS&#39; is a newline separated list of <code>key =&gt; value</code> pairs to be included in the default configuration dictionary. See the Examples section for more detail.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; @generate_config_funcs begin
+    info&quot;&quot;&quot;
+    Experiment details.
+    --------------------
+    - `seed::Int`: seed of RNG
+    - `steps::Int`: Number of steps taken in the experiment
+    &quot;&quot;&quot;
+    seed =&gt; 1
+    steps =&gt; 200000
+
+    info&quot;&quot;&quot;
+    Agent details
+    -------------
+    - `latent_size::Int`: The size of the hidden layers in the RNN.
+    &quot;&quot;&quot;
+    latent_size =&gt; 64
+
+    info&quot;&quot;&quot;
+    ### Optimizer details
+    Flux optimizers are used. See flux documentation.
+    - Parameters defined by the optimizer.
+    &quot;&quot;&quot;
+    eta =&gt; 0.001
+
+    info&quot;&quot;&quot;
+    ### Learning update and replay details including:
+    - Replay:
+        - `replay_size::Int`: How many transitions are stored in the replay.
+        - `warm_up::Int`: How many steps for warm-up (i.e. before learning begins).
+    &quot;&quot;&quot;
+    replay_size =&gt; 10000
+    warm_up =&gt; 1000
+
+    info&quot;&quot;&quot;
+    - Update details:
+        - `lupdate::String`: Learning update name
+        - `gamma::Float`: the discount for learning update.
+        - `batch_size::Int`: size of batch
+        - `truncation::Int`: Length of sequences used for training.
+        - `update_wait::Int`: Time between updates (counted in agent interactions)
+        - `target_update_wait::Int`: Time between target network updates (counted in agent interactions)
+        - `hs_strategy::String`: Strategy for dealing w/ hidden state in buffer.
+    &quot;&quot;&quot;
+    update =&gt; &quot;QLearningMSE&quot;
+    gamma =&gt; 1.0
+    batch_size=&gt;32
+    hist =&gt; 1
+    epsilon =&gt; 0.1
+    update_freq =&gt; 1
+    target_update_wait =&gt; 100
+end
+
+julia&gt; default_config()
+Dict{String, Any} with 13 entries:
+  &quot;steps&quot;              =&gt; 200000
+  &quot;warm_up&quot;            =&gt; 1000
+  &quot;batch_size&quot;         =&gt; 32
+  &quot;replay_size&quot;        =&gt; 10000
+  &quot;eta&quot;                =&gt; 0.001
+  &quot;hist&quot;               =&gt; 1
+  &quot;target_update_wait&quot; =&gt; 100
+  &quot;latent_size&quot;        =&gt; 64
+  &quot;update&quot;             =&gt; &quot;QLearningMSE&quot;
+  &quot;update_freq&quot;        =&gt; 1
+  &quot;epsilon&quot;            =&gt; 0.1
+  &quot;gamma&quot;              =&gt; 1.0
+  &quot;seed&quot;               =&gt; 1</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/mkschleg/Reproduce.jl/blob/98e9e2c0adbfbb184bccf05a2bafc3ed9d80e81e/src/macros.jl#L59-L151">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Reproduce.@generate_working_function-Tuple{}" href="#Reproduce.@generate_working_function-Tuple{}"><code>Reproduce.@generate_working_function</code></a> — <span class="docstring-category">Macro</span></header><section><div><pre><code class="language-julia hljs">@generate_working_function</code></pre><p>Generate a documented function <code>working_experiment()</code> which wraps the main experiment function (<code>main_experiment()</code>) of a module and sets the arguments <code>progress=true</code> and <code>testing=true</code>, and uses the default experiment configuration (see <a href="#Reproduce.@generate_config_funcs-Tuple{Any}"><code>@generate_config_funcs</code></a>).</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/mkschleg/Reproduce.jl/blob/98e9e2c0adbfbb184bccf05a2bafc3ed9d80e81e/src/macros.jl#L244-L251">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Reproduce.@param_from-Tuple{Any, Any}" href="#Reproduce.@param_from-Tuple{Any, Any}"><code>Reproduce.@param_from</code></a> — <span class="docstring-category">Macro</span></header><section><div><pre><code class="language-julia hljs">@param_from param config_dict</code></pre><p>Set the value of variable <code>param</code> to <code>config_dict[string(param)]</code>. There is also the capability to assign a type (or abstract type) you expect to recieve from the config for the key.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; d = Dict(
+           &quot;key1&quot; =&gt; 1,
+           &quot;key2&quot; =&gt; 2
+       )
+Dict{String, Int64} with 2 entries:
+  &quot;key2&quot; =&gt; 2
+  &quot;key1&quot; =&gt; 1
+
+julia&gt; @param_from key1 d
+1
+
+julia&gt; @param_from key2::Int d
+2
+
+julia&gt; println(key1, &quot; &quot;, key2)
+1 2
+
+julia&gt; println(key1 + key2)
+3</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/mkschleg/Reproduce.jl/blob/98e9e2c0adbfbb184bccf05a2bafc3ed9d80e81e/src/macros.jl#L270-L298">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../parallel/">« Parallel</a><a class="docs-footer-nextpage" href="../misc/">Misc Utilities »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 25 April 2023 12:38">Tuesday 25 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
