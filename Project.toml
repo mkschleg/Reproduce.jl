@@ -1,7 +1,7 @@
 name = "Reproduce"
 uuid = "560a9c3a-0b8c-11e9-0329-d39dfcb85ed2"
 authors = ["Matt <mkschleg@gmail.com>"]
-version = "0.13.0-dev"
+version = "0.13.0"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -39,6 +39,7 @@ Git = "0.3, 1"
 HDF5 = "0.12, 0.13, 0.14, 0.15, 0.16"
 JLD2 = "0.1, 0.2, 0.3, 0.4"
 JSON = "0.20, 0.21"
+MacroTools = "0.5"
 MySQL = "1"
 Parallelism = "0.1"
 ProgressMeter = "1"
