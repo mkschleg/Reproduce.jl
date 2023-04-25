@@ -80,12 +80,17 @@ function parallel_job_inner(comp_env,
     else
         # Hack, should be made better, I guess....
         c = filter((a)-> a[1] ∈ sub_seq, collect(experiment.args_iter)) 
-        [(i, arg[2]) for (i, arg) in enumerate(c)]
+        # enumerate(c)
     end
 
     # Check the Checkpoint
     n = length(args_iter)
-    finished_jobs_arr = fill(false, n)
+    # finished_jobs_dict = fill(false, n)
+    finished_jobs_arr = if isnothing(sub_seq)
+        fill(false, n)
+    else
+        Dict(i => false for i in sub_seq)
+    end
     if isfile(checkpoint_file)
         JLD2.@load checkpoint_file finished_jobs_arr
     else
