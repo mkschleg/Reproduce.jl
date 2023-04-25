@@ -15,10 +15,13 @@ makedocs(
             "Parser"=>"docs/parse.md",
             "Iterators"=>"docs/iterators.md",
             "Experiment"=>"docs/experiment.md",
+            "Save"=>"docs/save.md",
             "Parallel"=>"docs/parallel.md",
             "Experiment Utilities"=>"docs/exp_utils.md",
             "Misc Utilities"=>"docs/misc.md"
-
+        ],
+        "Deprecated Utilities" => [
+            "Search" => "docs/search.md"
         ]
     ]
 )

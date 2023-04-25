@@ -80,7 +80,7 @@ This function does all the setup required to successfully run an experiment. It 
 This function:
 - Creates the base experiment directory.
 - Runs [`experiment_save_init`](@ref) to initialize the details for each save type.
-- runs [`add_experiment`](@ref)
+- runs [`experiment_dir_setup`](@ref)
 """
 function pre_experiment(exp::Experiment; kwargs...)
     create_experiment_dir(exp.metadata.details_loc)
@@ -171,6 +171,11 @@ get_settings_dir(details_loc) = joinpath(details_loc, "settings")
 get_settings_file(hash::UInt) = "settings_0x"*string(hash, base=16)*".jld2"
 get_config_copy_file(hash::UInt) = "config_0x"*string(hash, base=16)*".jld2"
 
+"""
+    experiment_dir_setup
+
+Sets up all the needed directories to run a parallel experiment.
+"""
 function experiment_dir_setup(exp::Experiment)
     experiment_dir_setup(exp.metadata.comp_env, exp)
 end
@@ -236,6 +241,12 @@ function save_experiment_settings(exp::Experiment)# exp_dir, exp_hash)
     
 end
 
+
+"""
+    post_experiment
+
+This doesn't do anything.
+"""
 function post_experiment(exp::Experiment, job_ret)
     # I'm not sure what to put here.
 end
