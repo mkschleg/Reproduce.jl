@@ -99,8 +99,8 @@ function parallel_job_inner(comp_env,
 
     done_jobs = finished_jobs_arr
 
-    @info "Number of Jobs left: $(n - sum(done_jobs))/$(n)"
-    num_jobs_left = n - sum(done_jobs)
+    @info "Number of Jobs left: $(n - sum(values(done_jobs)))/$(n)"
+    num_jobs_left = n - sum(values(done_jobs))
 
     if all(done_jobs)
         @info "All jobs finished!"
