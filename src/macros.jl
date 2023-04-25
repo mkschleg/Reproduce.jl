@@ -40,8 +40,15 @@ function get_args_and_order(expr)
             ex
         elseif string(v)[1] == '{'
             k_str = string(k)
-            v_str = replace(string(v)[2:end-1], ';'=>',') # strip curly braces
-            dict_expr = Meta.parse("Dict(" * v_str * ")")
+            v_str = string(v) # strip curly braces
+            as, ao = get_args_and_order(Meta.parse(v_str))
+            # dict_expr = Meta.parse("Dict(" * v_str * ")")
+            dict_str = "Dict("
+            for (key, value) in zip(ao, as)
+                dict_str *= string(value) * ","
+            end
+            dict_str *= ")"
+            dict_expr = Meta.parse(dict_str)
             push!(arg_order, k_str)
             push!(args, :($k_str=>$dict_expr))
             :(nothing)
