@@ -9,11 +9,11 @@ struct InfoStr
     str::String
 end
 
-macro help_str(str)
-end
+# macro help_str(str)
+# end
 
-macro info_str(str)
-end
+# macro info_str(str)
+# end
 
 function get_help_str(default_config, __module__)
     start_str = "# Automatically generated docs for $(__module__) config."
@@ -270,7 +270,8 @@ end
 """
     @param_from param config_dict
 
-Set the value of variable `param` to `config_dict[string(param)]`.
+Set the value of variable `param` to `config_dict[string(param)]`. There is also the capability to
+assign a type (or abstract type) you expect to recieve from the config for the key.
 
 # Examples
 ```jldoctest; setup = :(import Reproduce: @param_from)
@@ -285,7 +286,7 @@ Dict{String, Int64} with 2 entries:
 julia> @param_from key1 d
 1
 
-julia> @param_from key2 d
+julia> @param_from key2::Int d
 2
 
 julia> println(key1, " ", key2)
@@ -296,10 +297,26 @@ julia> println(key1 + key2)
 ```
 """
 macro param_from(param, config_dict)
-    param_str = string(param)
-    quote
-        @assert $(param_str) ∈ keys($(esc(config_dict))) "Expected $(param_str) in config dictionary."
-        $(esc(param)) = $(esc(config_dict))[$(param_str)]
+    
+    # param_str = string(param)
+    chk = @capture(param, pname_::ptype_)
+    param_str, param_type_str = if chk
+        string(pname), string(ptype)
+    else
+        string(param), "Any"
+    end
+    # chk = @capture(ex, k_ => v_)
+    if chk
+        quote
+            @assert $(param_str) ∈ keys($(esc(config_dict))) "Expected " * $(param_str) * " in config dictionary."
+            @assert $(esc(config_dict))[$(param_str)] isa getproperty(Main, Symbol($(param_type_str))) "Expected " * $(param_str) * " to be of type `" * $(param_type_str) * "`."
+            $(esc(param)) = $(esc(config_dict))[$(param_str)]
+        end
+    else
+        quote
+            @assert $(param_str) ∈ keys($(esc(config_dict))) "Expected $(param_str) in config dictionary."
+            $(esc(param)) = $(esc(config_dict))[$(param_str)]
+        end
     end
 end
 
