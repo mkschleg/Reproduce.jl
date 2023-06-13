@@ -9,12 +9,6 @@ struct InfoStr
     str::String
 end
 
-# macro help_str(str)
-# end
-
-# macro info_str(str)
-# end
-
 function get_help_str(default_config, __module__)
     start_str = "# Automatically generated docs for $(__module__) config."
     help_str_strg = InfoStr[
@@ -175,11 +169,14 @@ macro generate_config_funcs(default_config)
     """
     quote
         @doc $(docs)
-        function $(esc(func_name))()
-            Dict{String, Any}(
+        function $(esc(func_name))(; kwargs...)
+            config = Dict{String, Any}(
                 $(args...)
             )
-
+            for (n, v) in kwargs
+                config[string(n)] = v
+            end
+            config
         end
 
         function $(esc(help_func_name))()
@@ -264,11 +261,8 @@ macro generate_working_function()
         Creates a wrapper experiment where the main experiment is called with progress=true, testing=true
         and the config is the default_config with the addition of the keyword arguments.
         """
-        function $(esc(:working_experiment))(progress=true;kwargs...)
-            config = $__module__.default_config()
-            for (n, v) in kwargs
-                config[string(n)] = v
-            end
+        function $(esc(:working_experiment))(progress=true; kwargs...)
+            config = $__module__.default_config(; kwargs...)
             $__module__.main_experiment(config; progress=progress, testing=true)
         end
     end
