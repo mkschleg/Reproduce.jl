@@ -17,7 +17,7 @@ import Reproduce:
     - `opt1::Int`: The first argument. Experiment errors on `opt1 == 2`
     - `opt2::Int`: The second argument.
     - `opt2::String`: The Third argument. This is required to be a string
-    - `opt4::Int`: The fourth argument. 
+    - `opt4::Int`: The fourth argument.
     """
     opt1 => 1
     opt2 => 2
@@ -44,7 +44,9 @@ function main_experiment(config::Dict, extra_arg = nothing; progress=false, test
         Dict("mean"=>0.1,
              "vec"=>rand(100),
              "mat"=>rand(10, 10),
-             "vec_vec"=>[rand(10) for _ in 1:10])
+             "vec_vec"=>[rand(10) for _ in 1:10],
+             "3darr"=>reshape(collect(1:27), 3, 3, 3),
+        )
     end
 end
 
