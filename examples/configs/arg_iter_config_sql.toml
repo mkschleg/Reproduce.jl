@@ -6,7 +6,7 @@ save_backend="mysql" # mysql only database backend supported
 database="test_iter" # for params and resutsl
 save_dir="test_iter_sql" # for exceptions, settings, and more!
 
-exp_file="examples/experiment.jl"
+exp_file="experiment.jl"
 exp_module_name = "TestExperiment"
 exp_func_name = "main_experiment"
 arg_iter_type = "iter"
