@@ -41,11 +41,12 @@ function main_experiment(config::Dict, extra_arg = nothing; progress=false, test
             throw("Oh No!!!")
         end
 
-        Dict("mean"=>0.1,
+        Dict(
+            "mean"=>0.1,
              "vec"=>rand(100),
              "mat"=>rand(10, 10),
-             "vec_vec"=>[rand(10) for _ in 1:10],
              "3darr"=>reshape(collect(1:27), 3, 3, 3),
+             "vec_vec"=>[rand(10) for _ in 1:10],
         )
     end
 end
